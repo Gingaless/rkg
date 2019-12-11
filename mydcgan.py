@@ -124,13 +124,11 @@ class MyDCGAN:
 		if os.path.isfile(self.Dfname):
 			self.D.load_weights(self.Dfname)
 			print('load the weights of the discriminator')
-		if os.path.isfile(self.Dfname):
+			
+		if os.path.isfile(self.Gfname):
 			self.G.load_weights(self.Gfname)
 			print('load the weights of the generator')
 			
-		if os.path.isfile(Gfname):
-			self.G.load_weights(Gfname)
-			print('load the weights of the generator')
 		
 	def data_shuffle(self, data):
 		

@@ -132,12 +132,16 @@ class RKG:
 		
 if __name__ == '__main__':
 	
-	rkg1 = RKG((256,256,3),2,128,print_term=4, kdsfromzip=(int(sys.argv[3])>0), batchsize=64,epoch=int(sys.argv[1]))
+	rkg1 = RKG((256,256,3),int(sys.argv[1]),128,print_term=4, kdsfromzip=(int(sys.argv[4])>0), batchsize=64,epoch=int(sys.argv[2]))
 	
 	if rkg1.Dfname in listdir() and rkg1.Gfname in listdir():
 		rkg1.gan.load()
 		print('load rkg weight data.')
-	if int(sys.argv[1])>0:
-		rkg1.gan.train(print_sample=int(sys.argv[2]))
+	if int(sys.argv[2])>0:
+		rkg1.gan.train(print_sample=int(sys.argv[3]))
 		
-	rkg1.gan.create_samples(int(sys.argv[2]))
+	rkg1.gan.create_samples(int(sys.argv[3]))
+
+
+
+

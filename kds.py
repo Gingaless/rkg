@@ -1,0 +1,27 @@
+import numpy as np
+import os
+from os.path import join as pathjoin
+from os.path import isfile
+from os import listdir
+import myimgprcs
+
+
+class KianaDataSet:
+	
+	def __init__(self,img_size=256):
+		
+		self.raw = KianaDataSet._kianap_load()
+		self.normalized = (self.raw.astype('float32') / 127.5) - 1
+		self.img_size = img_size
+		
+	def _kianap_load(folder='kianap',img_size=256,channel=3):
+		
+		cwd = os.getcwd()
+		files = [f for f in listdir(pathjoin(cwd,folder)) if isfile(pathjoin(cwd,folder, f))]
+		images =np.zeros((len(files),img_size,img_size,channel))
+		for i, f in enumerate(files):
+			images[i,:,:,:]=myimgprcs.open_img2rgb(pathjoin(folder,f))
+		
+		return images
+		
+		

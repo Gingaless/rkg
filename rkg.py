@@ -169,7 +169,7 @@ class RKG:
 		MyDCGAN.add_dbr(self.G,depth,7,4,bn_momentum=momentum)
 		MyDCGAN.add_dbr(self.G,int(depth/2),7,4,bn_momentum=momentum)
 		MyDCGAN.add_dbr(self.G,int(depth/4),7,4,bn_momentum=momentum)
-		MyDCGAN.G.add(conv2DTranspose(1,5,padding='same'))
+		self.G.add(conv2DTranspose(1,5,padding='same'))
 		self.G.add(Activation('tanh'))
 		self.G.summary()
 

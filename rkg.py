@@ -84,7 +84,7 @@ class RKG:
 				
 	def create_g2(self):
 		
-		depth=128
+		depth=64
 		dim = 16
 		alpha = 0.2
 		channel=3

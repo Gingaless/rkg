@@ -165,7 +165,7 @@ class RKG:
 		momentum=0.8
 
 		self.G.add(Dense(depth*dim*dim, input_dim=self.noise_size))
-                self.G.add(BatchNormalization(momentum))
+		self.G.add(BatchNormalization(momentum=momentum))
 		self.G.add(Reshape((dim,dim,depth)))
 		MyDCGAN.add_dbr(self.G,depth,7,4,bn_momentum=momentum)
 		MyDCGAN.add_dbr(self.G,int(depth/2),7,4,bn_momentum=momentum)

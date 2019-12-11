@@ -1,3 +1,4 @@
+import sys
 import os.path
 from os import listdir
 import numpy as np
@@ -129,12 +130,14 @@ class RKG:
 		self.G.add(Conv2D(channel, 7, strides=1,padding='same'))
 		self.G.summary()
 		
-
-
-rkg1 = RKG((256,256,3),2,128,print_term=4, kdsfromzip=True,batchsize=64,epoch=50)
-
-if rkg1.Dfname in listdir() and rkg1.Gfname in listdir():
-	rkg1.gan.load()
-	print('load rkg weight data.')
-
-rkg1.gan.train(print_sample=10)
+if __name__ == '__main__':
+	
+	rkg1 = RKG((256,256,3),2,128,print_term=4, kdsfromzip=bool(sys.argv[3]), batchsize=64)
+	
+	if rkg1.Dfname in listdir() and rkg1.Gfname in listdir():
+		rkg1.gan.load()
+		print('load rkg weight data.')
+	if int(sys.argv[2])>0:
+		rkg1.gan.train(print_sample=int(sys.argv[1]))
+		
+	rkg1.gan.create_samples(int(sys.argv[1]))

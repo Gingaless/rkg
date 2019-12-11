@@ -131,7 +131,7 @@ class RKG:
 		
 
 
-rkg1 = RKG((256,256,3),2,128,print_term=4, kdsfromzip=True)
+rkg1 = RKG((256,256,3),2,128,print_term=4, kdsfromzip=True,batchsize=64,epoch=50)
 
 if rkg1.Dfname in listdir() and rkg1.Gfname in listdir():
 	rkg1.gan.load()

@@ -1,4 +1,5 @@
 import os.path
+from os import listdir
 import numpy as np
 from keras.models import *
 from keras.layers import *
@@ -30,6 +31,33 @@ class RKG:
 		self.kdata = KianaDataSet(load_from_zip=kdsfromzip)
 		self.gan = MyDCGAN(self.noise_size,D=self.D,G=self.G,batchsize=batchsize,print_term=print_term,Dfname = 'k_d_w.h5', Gfname='k_g_w.h5',epoch=epoch)
 		self.gan.img_data = self.kdata.normalized
+		
+		
+	@property
+	def batchsize(self):
+		return self.gan.batchsize
+		
+	@property
+	def epoch(self):
+		return self.gan.epoch
+		
+	@property
+	def Dfname(self):
+		return self.gan.Dfname
+		
+	@property
+	def Gfname(self):
+		return self.gan.Gfname
+		
+	@batchsize.setter
+	def batchsize(self,value):
+		self.gan.batchsize=value
+		
+	@epoch.setter
+	def epoch(self,value):
+		self.gan.epoch=value
+		
+	
 	
 	def create_d1(self):
 		depth = 64
@@ -44,6 +72,7 @@ class RKG:
 		self.D.add(Dense(1))
 		self.D.add(Activation('sigmoid'))
 		self.D.summary()
+		
 		
 	def create_g1(self):
 		
@@ -100,7 +129,12 @@ class RKG:
 		self.G.add(Conv2D(channel, 7, strides=1,padding='same'))
 		self.G.summary()
 		
-		
-print('rkg train start.')
-rkg1 = RKG((256,256,3),2,128,print_term=1, kdsfromzip=True, batchsize=64)
+
+
+rkg1 = RKG((256,256,3),2,128,print_term=4, kdsfromzip=True)
+
+if rkg1.Dfname in listdir() and rkg1.Gfname in listdir():
+	rkg1.gan.load()
+	print('load rkg weight data.')
+
 rkg1.gan.train(print_sample=10)

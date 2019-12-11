@@ -13,12 +13,13 @@ from kds import KianaDataSet
 #random kiana generator
 class RKG:
 	
-	def __init__(self,input_shape,model=1,noise_size=100,kdsfromzip=False):
+	def __init__(self,input_shape,model=1,noise_size=100,kdsfromzip=False,batchsize=32,print_term=32,epoch=100):
 		
 		self.input_shape=input_shape
 		self.D = Sequential()
 		self.G = Sequential()
 		self.noise_size = noise_size
+
 		
 		if model==1:
 			self.create_d1()
@@ -27,7 +28,7 @@ class RKG:
 			self.create_d2()
 			self.create_g2()
 		self.kdata = KianaDataSet(load_from_zip=kdsfromzip)
-		self.gan = MyDCGAN(self.noise_size,D=self.D,G=self.G,batchsize=2,print_term=1,Dfname = 'k_d_w.h5', Gfname='k_g_w.h5')
+		self.gan = MyDCGAN(self.noise_size,D=self.D,G=self.G,batchsize=batchsize,print_term=print_term,Dfname = 'k_d_w.h5', Gfname='k_g_w.h5',epoch=epoch)
 		self.gan.img_data = self.kdata.normalized
 	
 	def create_d1(self):

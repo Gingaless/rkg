@@ -65,7 +65,7 @@ class RKG:
 	
 	def create_d2(self):
 		
-		depth=128
+		depth=64
 		alpha = 0.2
 		channel = 3
 		dropout=0.4

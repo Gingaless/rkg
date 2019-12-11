@@ -4,12 +4,14 @@ from os.path import join as pathjoin
 from os.path import isfile
 from os import listdir
 import myimgprcs
+from zipfile import ZipFile
 
 
 class KianaDataSet:
 	
-	def __init__(self,img_size=256):
-		
+	def __init__(self,img_size=256, load_from_zip=False):
+		if load_from_zip:
+			KianaDataSet._kp_load_from_zip('kianap')
 		self.raw = KianaDataSet._kianap_load()
 		self.normalized = (self.raw.astype('float32') / 127.5) - 1
 		self.img_size = img_size
@@ -24,4 +26,14 @@ class KianaDataSet:
 		
 		return images
 		
+		
+	def _kp_load_from_zip(folder='kianap', img_size=256, channel=3):
+		
+		file_name= '{}.zip'.format(folder)
+		
+		with ZipFile(file_name, 'r') as zip1:
+			zip1.printdir()
+			print('Extracting all the files now...')
+			zip1.extractall()
+			print('Done!')
 		

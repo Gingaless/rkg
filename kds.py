@@ -34,6 +34,6 @@ class KianaDataSet:
 		with ZipFile(file_name, 'r') as zip1:
 			zip1.printdir()
 			print('Extracting all the files now...')
-			zip1.extractall()
+			zip1.extractall(folder)
 			print('Done!')
 		

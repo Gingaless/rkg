@@ -140,7 +140,7 @@ class RKG:
 
 	def create_d3(self):
 
-		depth=128
+		depth=64
 		alpha = 0.2
 		channel = 3
 
@@ -158,7 +158,7 @@ class RKG:
 
 	def create_g3(self):
 
-		depth=128
+		depth=64
 		alpha = 0.2
 		channel = 3
 		dim = 4

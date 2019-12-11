@@ -24,7 +24,7 @@ class MyDCGAN:
 		self.batchsize = batchsize
 		self.loss = loss
 		self.print_term = print_term
-		self.G_lr_nim = G_lr_num
+		self.G_lr_num = G_lr_num
 		self.Dfname = Dfname
 		self.Gfname = Gfname
 		self.save_per_epoch = save_per_epoch
@@ -162,7 +162,7 @@ class MyDCGAN:
 		self.D.trainable = False
 		y = np.ones([self.batchsize,1])
 		a_loss = 0
-		for i in range(self.G_lr_nim):
+		for i in range(self.G_lr_num):
 			noise = np.random.uniform(-1.0,1.0,size=[self.batchsize,self.noise_size])
 			a_loss += self.AM.train_on_batch(noise,y)
 			#print('batch train ok')
@@ -194,7 +194,7 @@ class MyDCGAN:
 				
 				if (batch%self.print_term == 0) or (batch==self.batchsize-1):
 					
-					print("Epoch : {}/{}, batch : {}/{}, D_loss : {}, A_loss : {}".format(epoch+1, self.epoch, batch+1, train_per_epoch, d_loss, a_loss))
+					print("Epoch : {}/{}, iteration : {}/{}, D_loss : {}, A_loss : {}".format(epoch+1, self.epoch, batch+1, train_per_epoch, d_loss, a_loss))
 					
 					if print_sample>0:
 						self.create_samples(print_sample)

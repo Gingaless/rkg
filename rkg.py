@@ -15,7 +15,7 @@ from kds import KianaDataSet
 #random kiana generator
 class RKG:
 	
-	def __init__(self,input_shape,model=1,noise_size=100,kdsfromzip=False,batchsize=32,print_term=32,epoch=100):
+	def __init__(self,input_shape,model=1,noise_size=100,kdsfromzip=False,batchsize=32,print_term=32,epoch=100, D_optimizer=Adam(lr=0.001), G_optimizer=Adam(lr=0.0005)):
 		
 		self.input_shape=input_shape
 		self.D = Sequential()
@@ -29,8 +29,14 @@ class RKG:
 		if model==2:
 			self.create_d2()
 			self.create_g2()
+		if model==3:
+			self.create_d3()
+			self.create_g3()
+
+
+
 		self.kdata = KianaDataSet(load_from_zip=kdsfromzip)
-		self.gan = MyDCGAN(self.noise_size,D=self.D,G=self.G,batchsize=batchsize,print_term=print_term,Dfname = 'k_d_w.h5', Gfname='k_g_w.h5',epoch=epoch)
+		self.gan = MyDCGAN(self.noise_size,D=self.D,G=self.G,batchsize=batchsize,print_term=print_term,Dfname = 'k_d_w.h5', Gfname='k_g_w.h5',epoch=epoch,D_optimizer=D_optimizer, G_optimizer=D_optimizer)
 		self.gan.img_data = self.kdata.normalized
 		
 		
@@ -129,6 +135,58 @@ class RKG:
 		MyDCGAN.add_cbl(self.G,int(depth/4),5,1,0.2)
 		self.G.add(Conv2D(channel, 7, strides=1,padding='same'))
 		self.G.summary()
+
+
+
+	def create_d3(self):
+
+		depth=64
+		alpha = 0.2
+		channel = 3
+
+
+		self.D.add(Conv2D(depth, 3, input_shape=self.input_shape, padding='same'))
+		self.D.add(LeakyReLU(alpha=alpha))
+		MyDCGAN.add_cbl(self.D,depth*2, 4, 2, 0.2)
+		MyDCGAN.add_cbl(self.D,depth*4, 4, 2, 0.2)
+		MyDCGAN.add_cbl(self.D,depth*8, 4, 2, 0.2)
+
+		self.D.add(Flatten())
+		self.D.add(Dense(1))
+		self.D.add(Activation('sigmoid'))
+		self.D.summary()
+
+	def create_g3(self):
+
+		depth=128
+		alpha = 0.2
+		channel = 3
+		dim = 16
+		momentum=0.8
+
+		self.G.add(Dense(depth*dim*dim, input_dim=self.noise_size))
+		self.G.add(Reshape((dim,dim,depth)))
+		MyDCGAN.add_dbr(self.G,depth,7,4,bn_momentum=momentum)
+		MyDCGAN.add_dbr(int(self.G,depth/2),7,4,bn_momentum=momentum)
+		MyDCGAN.add_dbr(int(self.G,depth/4),7,4,bn_momentum=momentum)
+		MyDCGAN.add(conv2DTranspose(1,5,padding='same'))
+		self.D.add(Activation('tanh'))
+		self.D.summary()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		
 if __name__ == '__main__':
 	

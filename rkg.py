@@ -92,11 +92,11 @@ class RKG:
 		
 		self.G.add(Dense(depth*dim*dim,input_dim=self.noise_size))
 		self.G.add(Reshape((dim,dim,depth)))
-		MyDCGAN.add_cbl(self.G, depth*2, 5, 1, 0.2)
-		MyDCGAN.add_dbr(self.G,depth*2,11,4)
-		MyDCGAN.add_cbl(self.G,depth*4,4,1,0.2)
-		MyDCGAN.add_dbr(self.G,depth*4,11,4)
-		MyDCGAN.add_cbl(self.G,depth*4,5,1,0.2)
+		MyDCGAN.add_cbl(self.G, depth, 5, 1, 0.2)
+		MyDCGAN.add_dbr(self.G,depth,11,4)
+		MyDCGAN.add_cbl(self.G,depth,4,1,0.2)
+		MyDCGAN.add_dbr(self.G,depth,11,4)
+		MyDCGAN.add_cbl(self.G,depth,5,1,0.2)
 		self.G.add(Conv2D(channel, 7, strides=1,padding='same'))
 		self.G.summary()
 		

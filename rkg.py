@@ -166,9 +166,9 @@ class RKG:
 
 		self.G.add(Dense(depth*dim*dim, input_dim=self.noise_size))
 		self.G.add(Reshape((dim,dim,depth)))
-		MyDCGAN.add_dbr(self.G,depth,7,4,alpha=alpha,bn_momentum=momentum)
-		MyDCGAN.add_dbr(self.G,int(depth/2),7,4,alpha=alpha,bn_momentum=momentum)
-		MyDCGAN.add_dbr(self.G,int(depth/4),7,4,alpha=alpha,bn_momentum=momentum)
+		MyDCGAN.add_dbr(self.G,depth,7,4,bn_momentum=momentum)
+		MyDCGAN.add_dbr(self.G,int(depth/2),7,4,bn_momentum=momentum)
+		MyDCGAN.add_dbr(self.G,int(depth/4),7,4,bn_momentum=momentum)
 		self.G.add(Conv2DTranspose(3,1,padding='same'))
 		self.G.add(Activation('tanh'))
 		self.G.summary()

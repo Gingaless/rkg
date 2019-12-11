@@ -102,5 +102,5 @@ class RKG:
 		
 		
 
-rkg1 = RKG((256,256,3),2,128,print_term=1, kdsfromzip=True)
+rkg1 = RKG((256,256,3),2,128,print_term=1, kdsfromzip=True, batchsize=64)
 rkg1.gan.train(print_sample=10)

@@ -140,7 +140,7 @@ class RKG:
 
 	def create_d3(self):
 
-		depth=64
+		depth=128
 		alpha = 0.2
 		channel = 3
 
@@ -158,10 +158,10 @@ class RKG:
 
 	def create_g3(self):
 
-		depth=64
+		depth=128
 		alpha = 0.2
 		channel = 3
-		dim = 16
+		dim = 4
 		momentum=0.8
 
 		self.G.add(Dense(depth*dim*dim, input_dim=self.noise_size))

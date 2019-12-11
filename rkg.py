@@ -132,7 +132,7 @@ class RKG:
 		
 if __name__ == '__main__':
 	
-	rkg1 = RKG((256,256,3),2,128,print_term=4, kdsfromzip=(int(sys.argv[3])>0), batchsize=64,epoch=sys.argv[1])
+	rkg1 = RKG((256,256,3),2,128,print_term=4, kdsfromzip=(int(sys.argv[3])>0), batchsize=64,epoch=int(sys.argv[1]))
 	
 	if rkg1.Dfname in listdir() and rkg1.Gfname in listdir():
 		rkg1.gan.load()

@@ -143,15 +143,15 @@ class RKG:
 		depth=64
 		alpha = 0.2
 		channel = 3
-
+		dropout=0.4
 
 		self.D.add(Conv2D(depth, 3, input_shape=self.input_shape, padding='same'))
 		self.D.add(LeakyReLU(alpha=alpha))
 		MyDCGAN.add_cbl(self.D,depth*2, 4, 2, 0.2)
 		MyDCGAN.add_cbl(self.D,depth*4, 4, 2, 0.2)
 		MyDCGAN.add_cbl(self.D,depth*8, 4, 2, 0.2)
-
 		self.D.add(Flatten())
+		self.D.add(Dropout(dropout))
 		self.D.add(Dense(1))
 		self.D.add(Activation('sigmoid'))
 		self.D.summary()
@@ -161,16 +161,16 @@ class RKG:
 		depth=64*4
 		alpha = 0.2
 		channel = 3
-		dim = 4
+		dim = 16
 		momentum=0.8
 
 		self.G.add(Dense(depth*dim*dim, input_dim=self.noise_size))
 		self.G.add(BatchNormalization(momentum=momentum))
 		self.G.add(Reshape((dim,dim,depth)))
-		MyDCGAN.add_dbr(self.G,depth,7,4,bn_momentum=momentum)
-		MyDCGAN.add_dbr(self.G,int(depth/2),7,4,bn_momentum=momentum)
-		MyDCGAN.add_dbr(self.G,int(depth/4),7,4,bn_momentum=momentum)
-		self.G.add(Conv2DTranspose(3,3,padding='same'))
+		MyDCGAN.add_dbr(self.G,depth,7,2,bn_momentum=momentum)
+		MyDCGAN.add_dbr(self.G,int(depth/2),7,2,bn_momentum=momentum)
+		MyDCGAN.add_dbr(self.G,int(depth/4),7,2,bn_momentum=momentum)
+		self.G.add(Conv2D(3,2,padding='same'))
 		self.G.add(Activation('tanh'))
 		self.G.summary()
 

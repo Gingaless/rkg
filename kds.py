@@ -9,12 +9,13 @@ from zipfile import ZipFile
 
 class KianaDataSet:
 	
-	def __init__(self,img_size=256, load_from_zip=False):
+	def __init__(self,img_size=256, load_from_zip=False,folder=folder):
 		if load_from_zip:
 			KianaDataSet._kp_load_from_zip('kianap')
-		self.raw = KianaDataSet._kianap_load()
+		self.raw = KianaDataSet._kianap_load(folder,img_size)
 		self.normalized = (self.raw.astype('float32') / 127.5) - 1
 		self.img_size = img_size
+		self.folder=folder
 		
 	def _kianap_load(folder='kianap',img_size=256,channel=3):
 		

@@ -35,7 +35,7 @@ class RKG:
 
 
 
-		self.kdata = KianaDataSet(image_size=input_shape[0],load_from_zip=kdsfromzip,folder=folder)
+		self.kdata = KianaDataSet(img_size=input_shape[0],load_from_zip=kdsfromzip,folder=folder)
 		self.gan = MyDCGAN(self.noise_size,D=self.D,G=self.G,batchsize=batchsize,print_term=print_term,Dfname = 'k_d_w.h5', Gfname='k_g_w.h5',epoch=epoch,D_optimizer=D_optimizer, G_optimizer=D_optimizer)
 		self.gan.img_data = self.kdata.normalized
 		

@@ -15,7 +15,7 @@ from kds import KianaDataSet
 #random kiana generator
 class RKG:
 	
-	def __init__(self,input_shape,model=1,noise_size=100,kdsfromzip=False,batchsize=32,print_term=32,epoch=100, D_optimizer=Adam(lr=0.001), G_optimizer=Adam(lr=0.0005)):
+	def __init__(self,input_shape,model=1,noise_size=100,kdsfromzip=False,batchsize=32,print_term=32,epoch=100, D_optimizer=Adam(lr=0.001), G_optimizer=Adam(lr=0.0005),folder='kianap'):
 		
 		self.input_shape=input_shape
 		self.D = Sequential()
@@ -35,7 +35,7 @@ class RKG:
 
 
 
-		self.kdata = KianaDataSet(load_from_zip=kdsfromzip)
+		self.kdata = KianaDataSet(load_from_zip=kdsfromzip,folder=folder)
 		self.gan = MyDCGAN(self.noise_size,D=self.D,G=self.G,batchsize=batchsize,print_term=print_term,Dfname = 'k_d_w.h5', Gfname='k_g_w.h5',epoch=epoch,D_optimizer=D_optimizer, G_optimizer=D_optimizer)
 		self.gan.img_data = self.kdata.normalized
 		

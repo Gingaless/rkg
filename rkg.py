@@ -207,7 +207,7 @@ class RKG:
 		momentum=0.9
 		dropout = 0.3
 		alpha = 0.2
-		self.D.add(Conv2D(depth, 7, input_shape=self.input_shape, padding='same'))
+		self.D.add(Conv2D(depth, 7,strides=2, input_shape=self.input_shape, padding='same'))
 		self.D.add(LeakyReLU(alpha=alpha))
 		self.D.add(Dropout(dropout))
 		MyDCGAN.add_cbl(self.G, depth, 5, 2, alpha)

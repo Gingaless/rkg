@@ -14,6 +14,7 @@ class KianaDataSet:
 		if load_from_zip:
 			KianaDataSet._kp_load_from_zip(folder,img_size)
 			
+		self.folder=folder
 		self.total_num_of_data = self.get_num_datafile()
 		self.raw = KianaDataSet._kianap_load(folder,img_size)
 		self.normalized = (self.raw.astype('float32') / 127.5) - 1

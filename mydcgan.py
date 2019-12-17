@@ -12,7 +12,8 @@ K.set_image_data_format('channels_last')
 
 class MyDCGAN:
 	
-	def __init__(self,noise_size = 100, G = None, D =None, D_optimizer=Adam(lr=0.001), G_optimizer = Adam(lr=0.0005),loss='binary_crossentropy',epoch=5,batchsize = 100,print_term=20,img_size=256,channel=3, G_lr_num = 2,Dfname='gan_d_weights.h5',Gfname='gan_g_weights.h5',save_per_epoch=True):
+	def __init__(self,noise_size = 100, G = None, D =None, D_optimizer=Adam(lr=0.001), G_optimizer = Adam(lr=0.0005),loss='binary_crossentropy',epoch=5,batchsize = 100,print_term=20,img_size=256,channel=3, G_lr_num = 2,Dfname='gan_d_weights.h5',Gfname='gan_g_weights.h5',save_per_epoch=True, noise_generating_rule=(lambda batchsize, noisesize : 
+np.random.uniform(-1.0,1.0,size=[batchsize, noisesize]))):
 		
 		self.img_data = None
 		self.input_shape = (img_size, img_size, channel)
@@ -28,6 +29,7 @@ class MyDCGAN:
 		self.Dfname = Dfname
 		self.Gfname = Gfname
 		self.save_per_epoch = save_per_epoch
+		self.noise_generating_rule = noise_generating_rule
 		
 		if (D==None):
 			self.D=MyDCGAN.create_default_d(self.input_shape)
@@ -147,7 +149,7 @@ class MyDCGAN:
 		#print('load train images')
 		images_train = self.img_data[np.random.randint(0,np.shape(self.img_data)[0], size=self.batchsize),:,:,:]
 		#print('load image ok')
-		noise = np.random.uniform(-1.0,1.0,size=[self.batchsize, self.noise_size])
+		noise = self.noise_generating_rule(self.batchsize, self.noise_size)
 		images_fake = self.G.predict(noise)
 		
 		#Train D
@@ -162,7 +164,7 @@ class MyDCGAN:
 		self.D.trainable = False
 		y = np.ones([self.batchsize,1])
 		a_loss = 0
-		for i in range(self.G_lr_num):
+		for _ in range(self.G_lr_num):
 			noise = np.random.uniform(-1.0,1.0,size=[self.batchsize,self.noise_size])
 			a_loss += self.AM.train_on_batch(noise,y)
 			#print('batch train ok')
@@ -170,7 +172,7 @@ class MyDCGAN:
 		return d_loss, a_loss
 		
 	def create_samples(self,num_sample):
-		noise = np.random.uniform(-1.0,1.0,size=[num_sample, self.noise_size])
+		noise = self.noise_generating_rule(self.batchsize, self.noise_size)
 		samples=self.G.predict(noise)
 		samples=((samples+1.0)*127.5).astype('uint8')
 		for i in range(num_sample):

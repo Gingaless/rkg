@@ -223,7 +223,7 @@ class RKG:
 		
 	def create_g5(self):
 		
-		depth = 64+64+64+64
+		depth = 64*8
 		dim=4
 		channel = 3
 		momentum=0.9
@@ -235,15 +235,15 @@ class RKG:
 		self.G.add(Conv2D(int(depth), 5, strides=1, padding='same'))
 		MyDCGAN.add_dbr(self.G,int(depth),4,2)
 		self.G.add(Conv2D(int(depth), 5, strides=1, padding='same'))
-		MyDCGAN.add_dbr(self.G,int(depth),4,2)
-		self.G.add(Conv2D(int(depth/2), 5, strides=1, padding='same'))
 		MyDCGAN.add_dbr(self.G,int(depth/2),4,2)
 		self.G.add(Conv2D(int(depth/2), 5, strides=1, padding='same'))
-		MyDCGAN.add_dbr(self.G,int(depth/2),4,2)
-		self.G.add(Conv2D(int(depth/4), 5, strides=1, padding='same'))
 		MyDCGAN.add_dbr(self.G,int(depth/4),4,2)
 		self.G.add(Conv2D(int(depth/4), 5, strides=1, padding='same'))
-		MyDCGAN.add_dbr(self.G,int(depth/4),4,2)
+		MyDCGAN.add_dbr(self.G,int(depth/8),4,2)
+		self.G.add(Conv2D(int(depth/8), 5, strides=1, padding='same'))
+		MyDCGAN.add_dbr(self.G,int(depth/8),4,2)
+		self.G.add(Conv2D(int(depth/8), 5, strides=1, padding='same'))
+		MyDCGAN.add_dbr(self.G,int(depth/8),4,2)
 		self.G.add(Conv2D(channel, 5,strides=1,padding='same'))
 		self.G.add(Activation('tanh'))
 		self.G.summary()
@@ -260,7 +260,7 @@ class RKG:
 		self.D.add(LeakyReLU(alpha=alpha))
 		MyDCGAN.add_cbl(self.D, depth*2, 11, 4, alpha)
 		MyDCGAN.add_cbl(self.D, depth*4, 11, 4, alpha)
-		MyDCGAN.add_cbl(self.D, depth*4, 5, 2, alpha)
+		MyDCGAN.add_cbl(self.D, depth*8, 5, 2, alpha)
 		self.D.add(Flatten())
 		self.D.add(Dropout(dropout))
 		self.D.add(Dense(1))

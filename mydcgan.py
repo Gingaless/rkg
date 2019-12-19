@@ -165,9 +165,10 @@ np.random.uniform(-1.0,1.0,size=[batchsize, noisesize]))):
 		y = np.ones([self.batchsize,1])
 		a_loss = 0
 		for _ in range(self.G_lr_num):
-			noise = np.random.uniform(-1.0,1.0,size=[self.batchsize,self.noise_size])
+			noise =  self.noise_generating_rule(self.batchsize, self.noise_size)
 			a_loss += self.AM.train_on_batch(noise,y)
 			#print('batch train ok')
+		a_loss = a_loss / self.G_lr_num
 		
 		return d_loss, a_loss
 		

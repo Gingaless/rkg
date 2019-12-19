@@ -228,7 +228,7 @@ class RKG:
 		dim=4
 		channel = 3
 		momentum=0.9
-		dropout = 0.2
+		dropout = 0.05
 		alpha = 0.2
 		
 		self.G.add(Dense(dim*dim*depth, input_dim=self.noise_size))

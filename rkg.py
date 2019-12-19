@@ -250,8 +250,11 @@ class RKG:
 		alpha = 0.2
 		self.D.add(Conv2D(depth, 11,strides=4, input_shape=self.input_shape, padding='same'))
 		self.D.add(LeakyReLU(alpha=alpha))
+		self.D.add(Dropout(dropout))
 		MyDCGAN.add_cbl(self.D, depth*2, 11, 4, alpha)
+		self.D.add(Dropout(dropout))
 		MyDCGAN.add_cbl(self.D, depth*4, 11, 4, alpha)
+		self.D.add(Dropout(dropout))
 		MyDCGAN.add_cbl(self.D, depth*8, 5, 2, alpha)
 		self.D.add(Flatten())
 		self.D.add(Dropout(dropout))

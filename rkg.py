@@ -35,6 +35,9 @@ class RKG:
 		if model==4:
 			self.create_d4()
 			self.create_g4()
+		if model==5:
+			self.create_d5()
+			self.create_g5()
 
 
 
@@ -218,8 +221,52 @@ class RKG:
 		self.D.add(Dense(1))
 		self.D.add(Activation('sigmoid'))
 		self.D.summary()
-
-
+		
+	def create_g5(self):
+		
+		depth = 64+64+64+64
+		dim=4
+		channel = 3
+		momentum=0.9
+		dropout = 0.2
+		alpha = 0.2
+		
+		self.G.add(Dense(dim*dim*depth, input_dim=self.noise_size))
+		self.G.add(Reshape((dim,dim,depth)))
+		self.G.add(Dropout(dropout))
+		MyDCGAN.add_dbr(self.G,int(depth),4,2)
+		self.G.add(Dropout(dropout))
+		MyDCGAN.add_dbr(self.G,int(depth),4,2)
+		self.G.add(Dropout(dropout))
+		MyDCGAN.add_dbr(self.G,int(depth/2),4,2)
+		self.G.add(Dropout(dropout))
+		MyDCGAN.add_dbr(self.G,int(depth/2),4,2)
+		self.G.add(Dropout(dropout))
+		MyDCGAN.add_dbr(self.G,int(depth/4),4,2)
+		self.G.add(Dropout(dropout))
+		MyDCGAN.add_dbr(self.G,int(depth/4),4,2)
+		self.G.add(Dropout(dropout))
+		self.G.add(Conv2D(channel, 4,strides=1,padding='same'))
+		self.G.add(Activation('tanh'))
+		self.G.summary()
+		
+	def create_d5(self):
+		
+		depth = 64
+		dim=8
+		channel = 3
+		momentum=0.9
+		dropout = 0.4
+		alpha = 0.2
+		self.D.add(Conv2D(depth, 11,strides=4, input_shape=self.input_shape, padding='same'))
+		self.D.add(LeakyReLU(alpha=alpha))
+		MyDCGAN.add_cbl(self.D, depth*2, 11, 4, alpha)
+		MyDCGAN.add_cbl(self.D, depth, 11, 4, alpha)
+		self.D.add(Flatten())
+		self.D.add(Dropout(dropout))
+		self.D.add(Dense(1))
+		self.D.add(Activation('sigmoid'))
+		self.D.summary()
 
 
 

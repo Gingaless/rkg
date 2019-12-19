@@ -154,7 +154,7 @@ np.random.uniform(-1.0,1.0,size=[batchsize, noisesize]))):
 		
 		#Train D
 		x = np.concatenate([images_train, images_fake])
-		x = self.data_shuffle(x)
+		#x = self.data_shuffle(x)
 		y = np.ones([2*self.batchsize,1])
 		y[self.batchsize:,:] = 0
 		self.D.trainable = True

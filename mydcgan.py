@@ -195,7 +195,7 @@ np.random.uniform(-1.0,1.0,size=[batchsize, noisesize]))):
 				total_d_loss += d_loss
 				total_a_loss += a_loss
 				
-				if (batch%self.print_term == 0) or (batch==self.batchsize-1):
+				if (batch%self.print_term == 0) or (batch==train_per_epoch-1):
 					
 					print("Epoch : {}/{}, iteration : {}/{}, D_loss : {}, A_loss : {}".format(epoch+1, self.epoch, batch+1, train_per_epoch, d_loss, a_loss))
 					

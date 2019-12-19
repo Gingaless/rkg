@@ -43,7 +43,8 @@ class KianaDataSet:
 		file_name= '{}.zip'.format(folder)
 		
 		with ZipFile(file_name, 'r') as zip1:
-			zip1.printdir()
+			#zip1.printdir()
+			print('Start to Extract.')
 			print('Extracting all the files now...')
 			zip1.extractall(folder)
 			print('Done!')

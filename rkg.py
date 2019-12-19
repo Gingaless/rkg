@@ -236,6 +236,7 @@ class RKG:
 		MyDCGAN.add_dbr(self.G,int(depth/2),11,4)
 		MyDCGAN.add_dbr(self.G,int(depth/4),5,2)
 		MyDCGAN.add_dbr(self.G,int(depth/8),5,2)
+		self.G.Conv2D(channel, 4, stride=1, padding='same')
 		self.G.add(Activation('tanh'))
 		self.G.summary()
 		

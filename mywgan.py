@@ -134,6 +134,7 @@ class RandomWeightedAverage(_Merge):
     def __init__(self, batchsize):
     	super(_Merge)
     	self.batch_size = batchsize
+    	self.name = 'RandomWeightedAverage'
 
     def _merge_function(self, inputs):
         weights = K.random_uniform((self.batch_size, 1, 1, 1))

@@ -86,7 +86,7 @@ class MyWGAN:
 		discriminator_output_from_generator = self.D(generated_samples_for_discriminator)
 		discriminator_output_from_real_samples =self.D(real_samples)
 		
-		averaged_samples = RandomWeightedAverage()([real_samples,generated_samples_for_discriminator], self.batch_size)
+		averaged_samples = RandomWeightedAverage(self.batch_size)([real_samples,generated_samples_for_discriminator])
 		averaged_samples_out = self.D(averaged_samples)
 		partial_gp_loss = partial(MyWGAN.gradient_penalty_loss,averaged_samples=averaged_samples, gradient_penalty_weight=self.gradient_penalty_weight)
 		partial_gp_loss.__name__ = 'gradient_penalty'
@@ -130,9 +130,13 @@ class RandomWeightedAverage(_Merge):
     outputs a random point on the line between each pair of input points.
     Inheriting from _Merge is a little messy but it was the quickest solution I could
     think of. Improvements appreciated."""
+    
+    def __init__(self, batchsize):
+    	super(_Merge)
+    	self.batch_size = batchsize
 
-    def _merge_function(self, inputs, batchsize):
-        weights = K.random_uniform((batchsize, 1, 1, 1))
+    def _merge_function(self, inputs):
+        weights = K.random_uniform((self.batch_size, 1, 1, 1))
         return (weights * inputs[0]) + ((1 - weights) * inputs[1])
         
     

@@ -94,12 +94,14 @@ class MyWGAN:
 		self.discriminator_model = Model(inputs=[real_samples,generator_input_for_discriminator], outputs=[discriminator_output_from_real_samples, discriminator_output_from_generator, averaged_samples_out])
 		self.discriminator_model.compile(optimizer=self.optimizer, loss=[MyWGAN.wasserstein_loss, MyWGAN.wasserstein_loss, partial_gp_loss])
 		
-	def train(self, data, print_samples=0):
+	def train(self, data, epoches, print_samples=0):
 		
-		discriminator_loss, generator_loss = self.train_epoch(data, print_samples=print_samples)
-		
-		print('average G loss : ',  np.sum(generator_loss)/self.batch_size)
-		print('average D loss : ', np.sum(discriminator_loss)/(self.batch_size*self.n_critic))
+		for i in range(epoches):
+			print(i, 'th epoch train start.')
+			discriminator_loss, generator_loss = self.train_epoch(data, print_samples=print_samples)
+			
+			print('average G loss : ',  np.sum(generator_loss)/self.batch_size)
+			print('average D loss : ', np.sum(discriminator_loss)/(self.batch_size*self.n_critic))
 		
 	def train_epoch(self, data, print_term=10, print_samples=0):
 		
@@ -118,6 +120,9 @@ class MyWGAN:
 				noise = self.noise_generating_rule(self.batch_size, self.noise_size)
 				discriminator_loss.append(self.discriminator_model.train_on_batch([image_batch, noise], [positive_y, negative_y, dummy_y]))
 			generator_loss.append(self.generator_model.train_on_batch(self.noise_generating_rule(self.batch_size, self.noise_size), positive_y))
+			if i%print_term == 0:
+				print('D loss : ', discriminator_loss[-1])
+				print('G loss : ', generator_loss[-1])
 			
 		return discriminator_loss, generator_loss
                                             

@@ -134,7 +134,7 @@ class MyWGAN:
 				discriminator_loss.append(self.discriminator_model.train_on_batch([image_batch, noise], [positive_y, negative_y, dummy_y]))
 			generator_loss.append(self.generator_model.train_on_batch(self.noise_generating_rule(self.batch_size, self.noise_size), positive_y))
 			if i%print_term == 0:
-				print('generator iteration per epoch : ', i+1, '/',iter_per_epoch_g, '\ndiscriminator iteration per epoch : ', (i+1)*n_ciritic, '/', iter_per_epoch_g*self.n_critic)
+				print('generator iteration per epoch : ', i+1, '/',iter_per_epoch_g, '\ndiscriminator iteration per epoch : ', (i+1)*self.n_critic, '/', iter_per_epoch_g*self.n_critic)
 				print('D loss : ', discriminator_loss[-1])
 				print('G loss : ', generator_loss[-1])
 			

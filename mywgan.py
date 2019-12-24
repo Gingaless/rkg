@@ -101,7 +101,10 @@ class MyWGAN:
 		
 		for i in range(epoches):
 			print(i, 'th epoch train start.')
-			discriminator_loss, generator_loss = np.array(self.train_epoch(data, print_samples=print_samples, print_term=print_term))
+			discriminator_loss, generator_loss = self.train_epoch(data, print_samples=print_samples, print_term=print_term)
+			
+			discriminator_loss = abs(np.array(discriminator_loss))
+			generator_loss = abs(np.array(generator_loss))
 			
 			print('average abs G loss : ',  np.sum(abs(generator_loss))/self.batch_size)
 			print('average abs D loss : ', np.sum(abs(discriminator_loss),axis=1)/(self.batch_size*self.n_critic))

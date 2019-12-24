@@ -106,8 +106,8 @@ class MyWGAN:
 			discriminator_loss = abs(np.array(discriminator_loss))
 			generator_loss = abs(np.array(generator_loss))
 			
-			print('average abs G loss : ',  np.sum(abs(generator_loss))/self.batch_size)
-			print('average abs D loss : ', np.sum(abs(discriminator_loss),axis=1)/(self.batch_size*self.n_critic))
+			print('average abs G loss : ',  np.sum(abs(generator_loss))/len(generator_loss))
+			print('average abs D loss : ', np.sum(abs(discriminator_loss),axis=0)/len(discriminator_loss))
 			
 			if saving:
 				self.save_weights()
@@ -123,7 +123,8 @@ class MyWGAN:
 		discriminator_loss = []
 		generator_loss = []
 		minibatches_size = self.batch_size*self.n_critic
-		for i in range(int(np.shape(data)[0]//minibatches_size)):
+		iter_per_epoch_g = int(np.shape(data)[0]//minibatches_size)
+		for i in range(iter_per_epoch_g):
 			discriminator_minibatches = data[i*minibatches_size:(i+1)*minibatches_size]
 			for j in range(self.n_critic):
 				image_batch = discriminator_minibatches[j*self.batch_size:(j+1)*self.batch_size]
@@ -131,6 +132,7 @@ class MyWGAN:
 				discriminator_loss.append(self.discriminator_model.train_on_batch([image_batch, noise], [positive_y, negative_y, dummy_y]))
 			generator_loss.append(self.generator_model.train_on_batch(self.noise_generating_rule(self.batch_size, self.noise_size), positive_y))
 			if i%print_term == 0:
+				print('generator iteration per epoch : ', i+1, '/',iter_per_epoch_g, '\ndiscriminator iteration per epoch : ', i+1, '/', iter_per_epoch_g*self.n_critic)
 				print('D loss : ', discriminator_loss[-1])
 				print('G loss : ', generator_loss[-1])
 			

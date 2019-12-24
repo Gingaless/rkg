@@ -26,7 +26,7 @@ import numpy as np
 
 class MyWGAN:
 	
-	def __init__(self, img_shape=(256,256,3), noise_size=100, batch_size = 64, n_ciritic=5, gradient_penalty_weight = 10, optimizer = RMSprop(lr=0.00005), noise_generating_rule = (lambda batchsize, noisesize : np.random.uniform(-1.0, 1.0, size = [batchsize, noisesize]))):
+	def __init__(self, img_shape=(256,256,3), noise_size=100, batch_size = 64, n_ciritic=5, gradient_penalty_weight = 10, optimizer = RMSprop(lr=0.00005), noise_generating_rule = (lambda batchsize, noisesize : np.random.uniform(-1.0, 1.0, size = [batchsize, noisesize])), weight_file_name = 'mywgan1'):
 		
 		self.img_shape = img_shape
 		self.img_rows = img_shape[0]
@@ -36,6 +36,7 @@ class MyWGAN:
 		self.batch_size = batch_size
 		self.gradient_penalty_weight = gradient_penalty_weight
 		self.n_critic = n_ciritic
+		self.weight_file_name = weight_file_name
 		self.optimizer = optimizer
 		self.G = Sequential()
 		self.D = Sequential()
@@ -81,7 +82,9 @@ class MyWGAN:
 		self.D.trainable = True
 		
 		real_samples = Input(shape=self.img_shape)
-		generator_input_for_discriminator = Input(shape=(100,))
+		
+		generator_input_for_discriminator = Input(shape=(self.noise_size,))
+		
 		generated_samples_for_discriminator = self.G(generator_input_for_discriminator)
 		discriminator_output_from_generator = self.D(generated_samples_for_discriminator)
 		discriminator_output_from_real_samples =self.D(real_samples)
@@ -94,14 +97,18 @@ class MyWGAN:
 		self.discriminator_model = Model(inputs=[real_samples,generator_input_for_discriminator], outputs=[discriminator_output_from_real_samples, discriminator_output_from_generator, averaged_samples_out])
 		self.discriminator_model.compile(optimizer=self.optimizer, loss=[MyWGAN.wasserstein_loss, MyWGAN.wasserstein_loss, partial_gp_loss])
 		
-	def train(self, data, epoches, print_samples=0):
+	def train(self, data, epoches, print_samples=0, print_term=10, saving=True):
 		
 		for i in range(epoches):
 			print(i, 'th epoch train start.')
-			discriminator_loss, generator_loss = self.train_epoch(data, print_samples=print_samples)
+			discriminator_loss, generator_loss = np.array(self.train_epoch(data, print_samples=print_samples, print_term=print_term))
 			
-			print('average G loss : ',  np.sum(generator_loss)/self.batch_size)
-			print('average D loss : ', np.sum(discriminator_loss)/(self.batch_size*self.n_critic))
+			print('average abs G loss : ',  np.sum(abs(generator_loss))/self.batch_size)
+			print('average abs D loss : ', np.sum(abs(discriminator_loss),axis=1)/(self.batch_size*self.n_critic))
+			
+			if saving:
+				self.save_weights()
+		
 		
 	def train_epoch(self, data, print_term=10, print_samples=0):
 		
@@ -125,6 +132,23 @@ class MyWGAN:
 				print('G loss : ', generator_loss[-1])
 			
 		return discriminator_loss, generator_loss
+	
+			
+	def get_d_weight_file_name(self):
+		return '{}-d.h5'.format(self.weight_file_name)
+		
+	def get_g_weight_file_name(self):
+		return '{}-g.h5'.format(self.weight_file_name)
+		
+	def save_weights(self):
+		self.D.save_weights(self.get_d_weight_file_name())
+		self.G.save_weights(self.get_g_weight_file_name())
+		print('save complete.')
+		
+	def load_weights(self):
+		self.D.load_weights(self.get_d_weight_file_name())
+		self.G.load_weights(self.get_g_weight_file_name())
+		print('load complete.')
                                             
 		
 		

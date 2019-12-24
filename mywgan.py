@@ -109,6 +109,7 @@ class MyWGAN:
 			print('\nepoch : ', i+1, '/', epoches)
 			print('average abs G loss : ',  np.sum(abs(generator_loss))/len(generator_loss))
 			print('average abs D loss : ', np.sum(abs(discriminator_loss),axis=0)/len(discriminator_loss))
+			print()
 			
 		if saving:
 			self.save_weights()

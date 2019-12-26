@@ -13,6 +13,9 @@ from keras.optimizers import Adam
 from keras.optimizers import RMSprop
 from keras import backend as K
 from functools import partial
+from keras.models import model_from_json
+from os import listdir
+import zipfile
 
 
 import keras.backend as K
@@ -26,7 +29,7 @@ import numpy as np
 
 class MyWGAN:
 	
-	def __init__(self, img_shape=(256,256,3), noise_size=100, batch_size = 64, n_ciritic=5, gradient_penalty_weight = 10, optimizer = RMSprop(lr=0.00005), noise_generating_rule = (lambda batchsize, noisesize : np.random.uniform(-1.0, 1.0, size = [batchsize, noisesize])), weight_file_name = 'mywgan1'):
+	def __init__(self, img_shape=(256,256,3), noise_size=100, batch_size = 64, n_ciritic=5, gradient_penalty_weight = 10, optimizer = RMSprop(lr=0.00005), noise_generating_rule = (lambda batchsize, noisesize : np.random.uniform(-1.0, 1.0, size = [batchsize, noisesize])), weight_file_name = 'mywgan1', model_file_name = 'mywgan1'):
 		
 		self.img_shape = img_shape
 		self.img_rows = img_shape[0]
@@ -37,6 +40,7 @@ class MyWGAN:
 		self.gradient_penalty_weight = gradient_penalty_weight
 		self.n_critic = n_ciritic
 		self.weight_file_name = weight_file_name
+		self.model_file_name = model_file_name
 		self.optimizer = optimizer
 		self.G = Sequential()
 		self.D = Sequential()
@@ -147,15 +151,87 @@ class MyWGAN:
 	def get_g_weight_file_name(self):
 		return '{}-g.h5'.format(self.weight_file_name)
 		
+	def get_g_model_file_name(self):
+		return '{}-g.json'.format(self.model_file_name)
+		
+	def get_d_model_file_name(self):
+		return '{}-d.json'.format(self.model_file_name)
+		
+	def save_models(self):
+		
+		d_json = self.D.to_json() 
+		with open(self.get_d_model_file_name(), "w") as json_file:
+			json_file.write(d_json)
+			json_file.close()
+			
+		g_json = self.G.to_json() 
+		with open(self.get_g_model_file_name(), "w") as json_file:
+			json_file.write(g_json)
+			json_file.close()
+			
+	def load_models(self):
+		d_json_file = open(self.get_d_model_file_name, "r")
+		g_json_file = open(self.get_g_model_file_name,"r")
+		d_model = d_json_file.read()
+		g_model = g_json_file.read()
+		d_json_file.close()
+		g_json_file.close()
+		self.D = model_from_json(d_model)
+		self.G = model_from_json(g_model)
+		print("load models complete.")
+		
 	def save_weights(self):
 		self.D.save_weights(self.get_d_weight_file_name())
 		self.G.save_weights(self.get_g_weight_file_name())
-		print('save complete.')
+		print('save weights complete.')
 		
 	def load_weights(self):
 		self.D.load_weights(self.get_d_weight_file_name())
 		self.G.load_weights(self.get_g_weight_file_name())
+		print('load weights complete.')
+		
+	def save(self):
+		self.save_models()
+		self.save_weights()
+		print('save complete.')
+		
+	def zip(self,zipname):
+		mw_zip = zipfile.ZipFile(zipname, 'w')
+		mw_zip.write(self.get_d_model_file_name(), compress_type=zipfile.ZIP_DEFLATED)
+		mw_zip.write(self.get_g_model_file_name(), compress_type=zipfile.ZIP_DEFLATED)
+		mw_zip.write(self.get_d_weight_file_name(), compress_type=zipfile.ZIP_DEFLATED)
+		mw_zip.write(self.get_g_weight_file_name(), compress_type=zipfile.ZIP_DEFLATED)
+		mw_zip.close()
+		print('zip complete.')
+		
+	def save_and_zip(self, zipname):
+		self.save()
+		self.zip(zipname)
+		print('save and zip complete')
+		
+	def load(self):
+		if self.get_d_model_file_name() in listdir() and self.get_g_model_file_name() in listdir():
+			self.load_models()
+		else:
+			print('there exist no model files.')
+		if self.get_d_weight_file_name() in listdir() and self.get_g_weight_file_name in listdir():
+			self.load_weights()
+		else:
+			print('there exist no weight files.')
 		print('load complete.')
+		
+	def unzip(self, zipname):
+		if zipname in listdir():
+			mw_zip = zipfile.ZipFile(zipname, 'r')
+			mw_zip.extractall()
+			print('unzip complete')
+		else:
+			print('there exist no zip file.')
+			
+	def unzip_and_load(self,zipname):
+		self.unzip(zipname)
+		self.load()
+		print('unzip and load complete.')
                                             
 		
 		

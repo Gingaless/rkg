@@ -17,6 +17,7 @@ from keras.models import model_from_json
 from os import listdir
 import zipfile
 from keras_layer_normalization import LayerNormalization
+from keras.utils import CustomObjectScope
 
 
 import keras.backend as K
@@ -177,8 +178,9 @@ class MyWGAN:
 		g_model = g_json_file.read()
 		d_json_file.close()
 		g_json_file.close()
-		self.D = model_from_json(d_model)
-		self.G = model_from_json(g_model)
+		with CustomObjectScope({'LinearNormalization': LayerNormalization}):
+			self.D = model_from_json(d_model)
+			self.G = model_from_json(g_model)
 		print("load models complete.")
 		
 	def save_weights(self):

@@ -172,6 +172,7 @@ class MyWGAN:
 		with open(self.get_g_model_file_name(), "w") as json_file:
 			json_file.write(g_json)
 			json_file.close()
+		print('save models complete.')
 			
 	def load_models(self):
 		d_json_file = open(self.get_d_model_file_name(), "r")

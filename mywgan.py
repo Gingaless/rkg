@@ -62,11 +62,13 @@ class MyWGAN:
 		gradient_penalty = gradient_penalty_weight * K.square(1 - gradient_l2_norm)
 		return K.mean(gradient_penalty)
 		
-		
-	def compile_model(self, D, G):
-		
+	
+	def compile_model(self,D, G):
 		self.D = D
 		self.G = G
+		self.compile()
+				
+	def compile(self):
 		
 		#build generator model
 		
@@ -217,6 +219,9 @@ class MyWGAN:
 			self.load_models()
 		else:
 			print('there exist no model files.')
+		
+		self.compile()
+		
 		if self.get_d_weight_file_name() in listdir() and self.get_g_weight_file_name in listdir():
 			self.load_weights()
 		else:

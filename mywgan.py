@@ -222,7 +222,7 @@ class MyWGAN:
 		
 		self.compile()
 		
-		if self.get_d_weight_file_name() in listdir() and self.get_g_weight_file_name in listdir():
+		if self.get_d_weight_file_name() in listdir() and self.get_g_weight_file_name() in listdir():
 			self.load_weights()
 		else:
 			print('there exist no weight files.')

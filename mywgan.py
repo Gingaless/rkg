@@ -178,7 +178,7 @@ class MyWGAN:
 		g_model = g_json_file.read()
 		d_json_file.close()
 		g_json_file.close()
-		with CustomObjectScope({'LinearNormalization': LayerNormalization}):
+		with CustomObjectScope({'LayerNormalization': LayerNormalization}):
 			self.D = model_from_json(d_model)
 			self.G = model_from_json(g_model)
 		print("load models complete.")

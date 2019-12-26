@@ -146,16 +146,16 @@ class MyWGAN:
 	
 			
 	def get_d_weight_file_name(self):
-		return '{}-d.h5'.format(self.weight_file_name())
+		return '{}-d.h5'.format(self.weight_file_name)
 		
 	def get_g_weight_file_name(self):
-		return '{}-g.h5'.format(self.weight_file_name())
+		return '{}-g.h5'.format(self.weight_file_name)
 		
 	def get_g_model_file_name(self):
-		return '{}-g.json'.format(self.model_file_name())
+		return '{}-g.json'.format(self.model_file_name)
 		
 	def get_d_model_file_name(self):
-		return '{}-d.json'.format(self.model_file_name())
+		return '{}-d.json'.format(self.model_file_name)
 		
 	def save_models(self):
 		

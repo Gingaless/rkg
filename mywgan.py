@@ -16,6 +16,7 @@ from functools import partial
 from keras.models import model_from_json
 from os import listdir
 import zipfile
+from keras_layer_normalization import LayerNormalization
 
 
 import keras.backend as K

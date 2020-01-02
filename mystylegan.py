@@ -273,9 +273,14 @@ class MyStyleGAN(MyWGAN):
 		
 	def save_weights(self):
 		
-		self.MN.save_weights(self.get_mn_weight_file_name())
-		
-		super(MyStyleGAN, self).save_weights()
+		sn_w = self.get_sn_weight_file_name()
+		mn_w = self.get_mn_weight_file_name()
+		d_w = self.get_d_weight_file_name()
+
+		self.load_weight(self.SN, sn_w)
+		self.load_weight(self.MN, mn_w)
+		self.load_weight(self.D, d_w)
+		print('save weights complete.')
 		
 	def load_weights(self):
 		

@@ -5,9 +5,9 @@ from functools import partial
 
 
 from keras.models import Model, Sequential
-from keras.layers import Input, Dense, Reshape, Flatten, add, UpSampling2D, AveragePooling2D, Activation
+from keras.layers import Input, Dense, Reshape, Flatten, add,Activation
 from keras.layers.merge import _Merge
-from keras.layers.convolutional import Conv2D, Conv2DTranspose, Cropping2D
+from keras.layers.convolutional import Conv2D, Conv2DTranspose, Cropping2D, UpSampling2D, AveragePooling2D
 from keras.layers.normalization import BatchNormalization
 from keras.layers.advanced_activations import LeakyReLU
 from keras.optimizers import Adam
@@ -17,11 +17,16 @@ import mywgan
 from mywgan import MyWGAN
 from mywgan import RandomWeightedAverage
 from adain import AdaIN
-from noise import Noise
+from noise import ApplyNoise
+from learned_const_tensor import LearnedConstTensor
 from keras.models import model_from_json
+from keras.utils import CustomObjectScope
+from keras_layer_normalization import LayerNormalization
+from normalize import Normalize
 from os import listdir
 import zipfile
 from PIL import Image
+from rwa import _RandomWeightedAverage
 
 K.set_image_data_format('channels_last')
 
@@ -31,54 +36,6 @@ K.set_image_data_format('channels_last')
 def normalize(arr):
     return (arr - np.mean(arr)) / (np.std(arr) + 1e-7)
 
-
-def set_adain(inp, style,noise, fil,alpha=0.01):
-
-	b = Dense(fil)(style)
-	b = Reshape([1,1,fil])(b)
-	g = Dense(fil)(style)
-	g = Reshape([1,1,fil])(g)
-
-	n = Conv2D(filters = fil, kernel_size=1, padding='same', kernel_initializer='he_normal')
-
-	out = AdaIN()([inp, b, g])
-	out = add([out, n])
-	out = LeakyReLU(alpha=alpha)(out)
-
-
-
-def g_block1(style, noise, inp, fil, u = 2, kernel_size=3):
-	
-	b = Dense(fil)(style)
-	b = Reshape([1, 1, fil])(b)
-	g = Dense(fil)(style)
-	g = Reshape([1, 1, fil])(g)
-	
-	n = Conv2D(filters = fil, kernel_size = 1, padding = 'same', kernel_initializer = 'he_normal')(noise)
-	
-	if u>1:
-		out = UpSampling2D(size=u, interpolation = 'bilinear')(inp)
-		out = Conv2D(filters = fil, kernel_size = kernel_size, padding = 'same', kernel_initializer = 'he_normal')(out)
-	else:
-		out = Activation('linear')(inp)
-		
-	out = AdaIN()([out, b, g])
-	out = add([out, n])
-	out = LeakyReLU(0.01)(out)
-	
-	b = Dense(fil)(style)
-	b = Reshape([1, 1, fil])(b)
-	g = Dense(fil)(style)
-	g = Reshape([1, 1, fil])(g)
-	
-	n = Conv2D(filters = fil, kernel_size = 1, padding = 'same', kernel_initializer = 'he_normal')(noise)
-	
-	out = Conv2D(filters = fil, kernel_size = kernel_size, padding = 'same', kernel_initializer = 'he_normal')(out)
-	out = AdaIN()([out, b, g])
-	out = add([out, n])
-	out = LeakyReLU(0.01)(out)
-	
-	return out
 	
 	
 def d_block1(fil, inp, p = True):
@@ -100,8 +57,9 @@ def d_block1(fil, inp, p = True):
 #noise generating rule requires 1 argument(noise shape) in this class.
 class MyStyleGAN(MyWGAN):
 	
-	def __init__(self, **kwargs):
+	def __init__(self,const_tensor_shape = (4,4,256) ,**kwargs):
 		
+		self.const_tensor_shape=const_tensor_shape
 		super(MyStyleGAN, self).__init__(**kwargs)
 		
 		
@@ -112,6 +70,47 @@ class MyStyleGAN(MyWGAN):
 		self.positive_y = np.ones((self.batch_size, 1), dtype=np.float32)
 		self.negative_y = -self.positive_y
 		self.dummy_y = np.zeros((self.batch_size, 1), dtype=np.float32)
+		
+		
+		
+		
+	def construct_mn(self,n_layers,n_neurons, alpha=0.1):
+		mn_inp = Input(shape=[self.noise_size])
+		mn = Normalize()(mn_inp)
+		mn = Dense(n_neurons, kernel_initializer='he_normal')(mn)
+		for _ in range(1,n_layers):
+			mn = Dense(n_neurons, kernel_initializer = 'he_normal')(mn)
+			mn = LeakyReLU(alpha)(mn)
+		mn = Model(inputs=mn_inp,outputs=mn)
+		return mn
+		
+		
+		
+		
+		#noise + adain / conv2d / noise + adain / upsample + conv2d /
+	def construct_g_block1(self, gout, wlen,n_fils1, n_fils2, u=True,size=(2,2)):
+		
+		inp = gout[0]
+		w = gout[1]
+		out = ApplyNoise(noise_generating_rule=self.noise_generating_rule, fils=n_fils1)(inp)
+		out = AdaIN(wlen,n_fils1)([out,w])
+		out = Conv2D(n_fils1, kernel_size=3, strides=1, padding='same', kernel_initializer='he_normal')(out)
+		
+		out = ApplyNoise(noise_generating_rule=self.noise_generating_rule, fils=n_fils1)(out)
+		out = AdaIN(wlen,n_fils1)([out,w])
+						
+		if u:
+			
+			out = UpSampling2D(interpolation='bilinear',size=size,data_format='channels_last')(out)
+			
+			out = Conv2D(n_fils2, kernel_size=3, strides=1, padding='same', kernel_initializer='he_normal')(out)
+		else:
+			out = Activation('linear')(inp)
+			
+		return [out, w]
+		
+				
+				
 
 	def set_G_trainable(self, tr=True):
 		self.MN.trainable = tr
@@ -125,6 +124,17 @@ class MyStyleGAN(MyWGAN):
 		self.D.trainable = tr
 		for layer in self.D.layers:
 			layer.trainable = tr
+			
+			
+			
+	def construct_generator_input(self, pseudo_input_for_const_tensor, latent_vector):
+	
+	
+		w = self.MN(latent_vector)
+		
+		const_tensor = LearnedConstTensor(self.const_tensor_shape)(pseudo_input_for_const_tensor)
+		
+		return [const_tensor, w]
 		
 		
 	def compile_generator(self):
@@ -133,27 +143,20 @@ class MyStyleGAN(MyWGAN):
 		self.set_G_trainable()
 		
 		
-		inp_s = Noise(self.noise_generating_rule,[self.noise_size])
-		sty = self.MN(inp_s)
-		inp_n = Noise(self.noise_generating_rule, [self.noise_size])
-		noi = Activation('linear')(inp_n)
-		inp = Input(shape=[1])
+		inp_sty = Input(shape=[self.noise_size])
+		pseudo_input_for_const_tensor= Input(shape=[1])
 		
-		ginp = [inp]
-		gene = self.G([sty, noi, inp])
-		gout = [self.D(gene)]
+		gminp = [pseudo_input_for_const_tensor, inp_sty]
 		
-		self.AM = Model(inputs=ginp, outputs=gout)
-		self.AM.compile(optimizer=self.optimizer, loss=[MyWGAN.wasserstein_loss])
+		geneinp = self.construct_generator_input(pseudo_input_for_const_tensor, inp_sty)
 		
-	def construct_mn(self,n_layers,n_neurons, alpha=0.1):
-		mn_inp = Input(shape=[self.noise_size])
-		mn = Dense(n_neurons, kernel_initializer='he_normal')(mn_inp)
-		for _ in range(1,n_layers):
-			mn = Dense(n_neurons, kernel_initializer = 'he_normal')(mn)
-			mn = LeakyReLU(alpha)(mn)
-		mn = Model(inputs=[mn_inp],outputs=[mn])
-		return mn
+		gene = self.G(geneinp)
+		gout = self.D(gene)
+		
+		self.AM = Model(inputs=gminp, outputs=gout)
+		self.AM.compile(optimizer=self.optimizer, loss=MyWGAN.wasserstein_loss)
+		
+	
 		
 	
 	def compile_discriminator(self):
@@ -170,18 +173,25 @@ class MyStyleGAN(MyWGAN):
 		
 		real_samples = Input(shape=self.img_shape)
 		
-		generator_input_for_discriminator = Input(shape=[1])
+		pseudo_input = Input(shape=[1])
+		
+		latent_vector = Input(shape=[self.noise_size])
+		
+		
+		generator_input_for_discriminator = self.construct_generator_input(pseudo_input, latent_vector)
 		
 		generated_samples_for_discriminator = self.G(generator_input_for_discriminator)
+		
+		
 		discriminator_output_from_generator = self.D(generated_samples_for_discriminator)
 		discriminator_output_from_real_samples =self.D(real_samples)
 		
-		averaged_samples = RandomWeightedAverage(self.batch_size)([real_samples, generated_samples_for_discriminator])
+		averaged_samples = _RandomWeightedAverage()([real_samples, generated_samples_for_discriminator])
 		averaged_samples_out = self.D(averaged_samples)
 		partial_gp_loss = partial(MyWGAN.gradient_penalty_loss,averaged_samples=averaged_samples, gradient_penalty_weight=self.gradient_penalty_weight)
 		partial_gp_loss.__name__ = 'gradient_penalty'
 		
-		self.DM = Model(inputs=[real_samples], outputs=[discriminator_output_from_real_samples, discriminator_output_from_generator, averaged_samples_out])
+		self.DM = Model(inputs=[real_samples, pseudo_input, latent_vector], outputs=[discriminator_output_from_real_samples, discriminator_output_from_generator, averaged_samples_out])
 		
 		self.DM.compile(optimizer=self.optimizer, loss = [MyWGAN.wasserstein_loss, MyWGAN.wasserstein_loss, partial_gp_loss])
 		
@@ -239,14 +249,14 @@ class MyStyleGAN(MyWGAN):
 			
 		super(MyStyleGAN, self).save_models()
 		
-	def load_models(self):
+	def load_models(self, custom_layers={'LayerNormalization':LayerNormalization, 'ApplyNoise':ApplyNoise, 'LearnedConstTensor' : LearnedConstTensor, 'Normalize': Normalize, 'AdaIN':AdaIN}):
 		mn_json_file = open(self.get_mn_model_file_name(), "r")
 		mn_model = mn_json_file.read()
 		mn_json_file.close()
+		with CustomObjectScope(custom_layers):
+			self.MN = model_from_json(mn_model)
 		
-		self.MN = model_from_json(mn_model)
-		
-		super(MyStyleGAN, self).load_models()
+		super(MyStyleGAN, self).load_models(custom_layers)
 		
 	def save_weights(self):
 		
@@ -289,36 +299,32 @@ class MyStyleGAN(MyWGAN):
 		
 
 D = Input(shape=(256,256,3))
-gan1 = MyStyleGAN(optimizer=Adam(lr=0.001, beta_1 = 0, beta_2=0.99), noise_size=256, noise_generating_rule= (lambda size : K.random.uniform(-1.0,1.0,size=size)))
+
+gan1 = MyStyleGAN(img_shape=(256,256,3),optimizer=Adam(lr=0.001, beta_1 = 0, beta_2=0.99), noise_size=256, noise_generating_rule= (lambda shape : K.random_uniform(shape, -1.0,1.0)))
 
 gan1.MN = gan1.construct_mn(8,256)
-G_inputs=[Input(shape=[256]), Input(shape=[256,256,1]),Input(shape=[1])] #sty, noi, inp
-G_sty = G_inputs[0]
-G_noi = G_inputs[1]
-G_inp = G_inputs[2]
-inp2 = Dense(4*4*256)(G_inp)
-inp3 = Reshape((4,4,256))(inp2)
-noi = G_noi
-noi128 = AveragePooling2D()(noi)
-noi64 = AveragePooling2D()(noi128)
-noi32 = AveragePooling2D()(noi64)
-noi16 = AveragePooling2D()(noi32)
-G = g_block1(G_sty, noi16, inp3, 256,4,kernel_size=5)#up 16
-G = g_block1(G_sty, noi64, G, 256, 4,kernel_size=5)#up 64
-G = g_block1(G_sty, noi128, G, 128)#up 128
-G = g_block1(G_sty, noi, G,64)#up 256
-G = Conv2D(3,kernel_size=3, padding='same',kernel_initializer='he_normal')(G)
-G = Activation('tanh')(G)
-G = Model(inputs=G_inputs, outputs=[G])
+lconst_tensor = Input(shape=(4,4,256))
+in_sty = Input(shape=[256])
+G = gan1.construct_g_block1([lconst_tensor, in_sty],256,256,256)#8
+G = gan1.construct_g_block1(G, 256,256,192)#16
+G = gan1.construct_g_block1(G,256,192,128)#32
+G = gan1.construct_g_block1(G,256,128,64)#64
+G = gan1.construct_g_block1(G,256,64,48)#128
+G = gan1.construct_g_block1(G,256,48,32)#256
+G = Conv2D(3,1,padding='same', kernel_initializer='he_normal')(G[0])
+G = Model(inputs=[lconst_tensor, in_sty], outputs=G)
 
 
 D_input = Input(shape=(256,256,3))
 D = Conv2D(32, kernel_size=3 , padding='same',kernel_initializer = 'he_normal')(D_input)
+D = LeakyReLU(0.1)(D)
 D = d_block1(64,D)
 D = d_block1(128, D)
 D = d_block1(256, D)
-D = d_block1(3, D)
-D = Model(inputs=[D_input], outputs=[D])
+D = d_block1(256, D)
+D = Flatten()(D)
+D = Dense(1)(D)
+D = Model(inputs=D_input, outputs=D)
 
 gan1.G = G
 gan1.D = D

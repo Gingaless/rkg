@@ -28,6 +28,8 @@ import sys
 
 import numpy as np
 
+K.set_image_data_format('channels_last')
+
 
 class MyWGAN:
 	
@@ -174,14 +176,14 @@ class MyWGAN:
 			json_file.close()
 		print('save models complete.')
 			
-	def load_models(self):
+	def load_models(self,custom_layers={'LayerNormalization': LayerNormalization}):
 		d_json_file = open(self.get_d_model_file_name(), "r")
 		g_json_file = open(self.get_g_model_file_name(),"r")
 		d_model = d_json_file.read()
 		g_model = g_json_file.read()
 		d_json_file.close()
 		g_json_file.close()
-		with CustomObjectScope({'LayerNormalization': LayerNormalization}):
+		with CustomObjectScope(custom_layers):
 			self.D = model_from_json(d_model)
 			self.G = model_from_json(g_model)
 		print("load models complete.")
@@ -247,17 +249,14 @@ class MyWGAN:
 		
 		
 class RandomWeightedAverage(_Merge):
-    """Takes a randomly-weighted average of two tensors. In geometric terms, this
-    outputs a random point on the line between each pair of input points.
-    Inheriting from _Merge is a little messy but it was the quickest solution I could
-    think of. Improvements appreciated."""
     
     def __init__(self, batch_size):
-    	super().__init__()
+    	super(RandomWeightedAverage, self).__init__()
     	self.batch_size=batch_size
 
     def _merge_function(self, inputs):
-        weights = K.random_uniform((self.batch_size, 1, 1, 1))
-        return (weights * inputs[0]) + ((1 - weights) * inputs[1])
+    	batch_size = K.shape(inputs[0])[0]
+    	weights = K.random_uniform((batch_size, 1, 1, 1))
+    	return (weights * inputs[0]) + ((1 - weights) * inputs[1])
         
     

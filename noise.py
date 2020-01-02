@@ -82,3 +82,4 @@ if __name__=='__main__':
 	m=Model(inp,an(inp))
 	m.summary()
 	print(m.predict(a))
+	print(ngr([2,5]), dtype='float32')

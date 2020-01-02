@@ -27,6 +27,7 @@ from os import listdir
 import zipfile
 from PIL import Image
 from rwa import _RandomWeightedAverage
+from kds import KianaDataSet
 
 K.set_image_data_format('channels_last')
 
@@ -222,9 +223,11 @@ class MyStyleGAN(MyWGAN):
 		for i in range(iter_per_epoch_g):
 			discriminator_minibatches = data[i*minibatches_size:(i+1)*minibatches_size]
 			for j in range(self.n_critic):
+				latent_vector = self.noise_generating_rule([self.batch_size, self.noise_size])
 				image_batch = discriminator_minibatches[j*self.batch_size:(j+1)*self.batch_size]
-				discriminator_loss.append(self.DM.train_on_batch([image_batch, positive_y], [positive_y, negative_y, dummy_y]))
-			generator_loss.append(self.AM.train_on_batch(positive_y, positive_y))
+				discriminator_loss.append(self.DM.train_on_batch([image_batch, positive_y, latent_vector], [positive_y, negative_y, dummy_y]))
+			latent_vector = self.noise_generating_rule([self.batch_size, self.noise_size])
+			generator_loss.append(self.AM.train_on_batch([positive_y, latent_vector], positive_y))
 			if i%print_term == 0:
 				print('generator iteration per epoch : ', i+1, '/',iter_per_epoch_g, '\ndiscriminator iteration per epoch : ', (i+1)*self.n_critic, '/', iter_per_epoch_g*self.n_critic)
 				print('D loss : ', discriminator_loss[-1])
@@ -249,7 +252,10 @@ class MyStyleGAN(MyWGAN):
 			
 		super(MyStyleGAN, self).save_models()
 		
-	def load_models(self, custom_layers={'LayerNormalization':LayerNormalization, 'ApplyNoise':ApplyNoise, 'LearnedConstTensor' : LearnedConstTensor, 'Normalize': Normalize, 'AdaIN':AdaIN}):
+	def load_models(self,
+	custom_layers={'LayerNormalization':LayerNormalization, 'ApplyNoise':ApplyNoise,
+	'LearnedConstTensor' : LearnedConstTensor, 'Normalize': Normalize, 'AdaIN':AdaIN,
+	'_RandomWeightedAverage' : _RandomWeightedAverage}):
 		mn_json_file = open(self.get_mn_model_file_name(), "r")
 		mn_model = mn_json_file.read()
 		mn_json_file.close()
@@ -272,6 +278,7 @@ class MyStyleGAN(MyWGAN):
 		
 	def zip(self, zipname):
 		
+		zipname = '{}.zip'.format(zipname)
 		mw_zip = zipfile.ZipFile(zipname, 'w')
 		mw_zip.write(self.get_mn_model_file_name(), compress_type=zipfile.ZIP_DEFLATED)
 		mw_zip.write(self.get_mn_weight_file_name(), compress_type=zipfile.ZIP_DEFLATED)
@@ -298,35 +305,38 @@ class MyStyleGAN(MyWGAN):
 		
 		
 
-D = Input(shape=(256,256,3))
-
-gan1 = MyStyleGAN(img_shape=(256,256,3),optimizer=Adam(lr=0.001, beta_1 = 0, beta_2=0.99), noise_size=256, noise_generating_rule= (lambda shape : K.random_uniform(shape, -1.0,1.0)))
-
-gan1.MN = gan1.construct_mn(8,256)
-lconst_tensor = Input(shape=(4,4,256))
-in_sty = Input(shape=[256])
-G = gan1.construct_g_block1([lconst_tensor, in_sty],256,256,256)#8
-G = gan1.construct_g_block1(G, 256,256,192)#16
-G = gan1.construct_g_block1(G,256,192,128)#32
-G = gan1.construct_g_block1(G,256,128,64)#64
-G = gan1.construct_g_block1(G,256,64,48)#128
-G = gan1.construct_g_block1(G,256,48,32)#256
-G = Conv2D(3,1,padding='same', kernel_initializer='he_normal')(G[0])
-G = Model(inputs=[lconst_tensor, in_sty], outputs=G)
-
-
-D_input = Input(shape=(256,256,3))
-D = Conv2D(32, kernel_size=3 , padding='same',kernel_initializer = 'he_normal')(D_input)
-D = LeakyReLU(0.1)(D)
-D = d_block1(64,D)
-D = d_block1(128, D)
-D = d_block1(256, D)
-D = d_block1(256, D)
-D = Flatten()(D)
-D = Dense(1)(D)
-D = Model(inputs=D_input, outputs=D)
-
-gan1.G = G
-gan1.D = D
-
-gan1.compile()
+if __name__=='__main__':
+	
+	D = Input(shape=(256,256,3))
+	
+	gan1 = MyStyleGAN(img_shape=(256,256,3),optimizer=Adam(lr=0.001, beta_1 = 0, beta_2=0.99), noise_size=256,
+	noise_generating_rule= (lambda shape : K.random_uniform(shape, -1.0,1.0)))
+	gan1.MN = gan1.construct_mn(8,256)
+	lconst_tensor = Input(shape=(4,4,256))
+	in_sty = Input(shape=[256])
+	G = gan1.construct_g_block1([lconst_tensor, in_sty],256,256,256)#8
+	G = gan1.construct_g_block1(G, 256,256,192)#16
+	G = gan1.construct_g_block1(G,256,192,128)#32
+	G = gan1.construct_g_block1(G,256,128,64)#64
+	G = gan1.construct_g_block1(G,256,64,48)#128
+	G = gan1.construct_g_block1(G,256,48,32)#256
+	G = Conv2D(3,1,padding='same', kernel_initializer='he_normal')(G[0])
+	G = Model(inputs=[lconst_tensor, in_sty], outputs=G)
+	
+	D_input = Input(shape=(256,256,3))
+	D = Conv2D(32, kernel_size=3 , padding='same',kernel_initializer = 'he_normal')(D_input)
+	D = LeakyReLU(0.1)(D)
+	D = d_block1(64,D)
+	D = d_block1(128, D)
+	D = d_block1(256, D)
+	D = d_block1(256, D)
+	D = Flatten()(D)
+	D = Dense(1)(D)
+	D = Model(inputs=D_input, outputs=D)
+	
+	gan1.G = G
+	gan1.D = D
+	
+	gan1.compile()
+	kds1 = KianaDataSet(folder='kfcp256',load_from_zip=True)
+	gan1.train(kds1.normalized, 2, 0, 1, False)

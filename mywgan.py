@@ -162,6 +162,7 @@ class MyWGAN:
 		
 	def get_d_model_file_name(self):
 		return '{}-d.json'.format(self.model_file_name)
+
 		
 	def save_models(self):
 		
@@ -204,6 +205,7 @@ class MyWGAN:
 		print('save complete.')
 		
 	def zip(self,zipname):
+		zipname = '{}.zip'.format(zipname)
 		mw_zip = zipfile.ZipFile(zipname, 'w')
 		mw_zip.write(self.get_d_model_file_name(), compress_type=zipfile.ZIP_DEFLATED)
 		mw_zip.write(self.get_g_model_file_name(), compress_type=zipfile.ZIP_DEFLATED)
@@ -232,6 +234,7 @@ class MyWGAN:
 		print('load complete.')
 		
 	def unzip(self, zipname):
+		zipname = '{}.zip'.format(zipname)
 		if zipname in listdir():
 			mw_zip = zipfile.ZipFile(zipname, 'r')
 			mw_zip.extractall()

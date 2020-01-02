@@ -248,12 +248,14 @@ class MyStyleGAN(MyWGAN):
 		return '{}-sn.json'.format(self.model_file_name)
 		
 	def save_models(self):
-		mn_json = self.MN.to_json() 
-		with open(self.get_mn_model_file_name(), "w") as json_file:
-			json_file.write(mn_json)
-			json_file.close()
-			
-		super(MyStyleGAN, self).save_models()
+		sn_json = self.get_sn_model_file_name()
+		mn_json = self.get_mn_model_file_name()
+		d_json =self.get_d_model_file_name()
+
+		self.save_model(sn_json, self.SN)
+		self.save_model(mn_json, self.MN)
+		self.save_model(d_json, self.D)
+		print('save complete.')
 		
 	def load_models(self,
 	custom_layers={'LayerNormalization':LayerNormalization, 'ApplyNoise':ApplyNoise,

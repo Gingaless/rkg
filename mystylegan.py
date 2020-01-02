@@ -203,7 +203,7 @@ class MyStyleGAN(MyWGAN):
 	def generate_samples(self, n_samples):
 		
 		latent_vector = self.noise_generating_rule([n_samples, self.noise_size])
-		samples = self.G.predict([np.ones(n_samples,1),latent_vector])
+		samples = self.G.predict([np.ones([n_samples,1]),latent_vector])
 		samples = ((samples + 1)*127.5).astype('uint8')
 		
 		for i in range(n_samples):

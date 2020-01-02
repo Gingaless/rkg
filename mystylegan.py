@@ -5,7 +5,7 @@ from functools import partial
 
 
 from keras.models import Model, Sequential
-from keras.layers import Input, Dense, Reshape, Flatten, add,Activation
+from keras.layers import Input, Dense, Reshape, Flatten, add,Activation, Lambda
 from keras.layers.merge import _Merge
 from keras.layers.convolutional import Conv2D, Conv2DTranspose, Cropping2D, UpSampling2D, AveragePooling2D
 from keras.layers.normalization import BatchNormalization
@@ -65,8 +65,10 @@ class MyStyleGAN(MyWGAN):
 		
 		
 		self.MN = Model() #mapping network
+		self.SN = Model() #synthesis network
 		self.AM = Model()
 		self.DM = Model()
+		self.generate_latent_vector = lambda shape : K.eval(self.noise_generating_rule(shape))
 		
 		self.positive_y = np.ones((self.batch_size, 1), dtype=np.float32)
 		self.negative_y = -self.positive_y
@@ -117,8 +119,8 @@ class MyStyleGAN(MyWGAN):
 		self.MN.trainable = tr
 		for layer in self.MN.layers:
 			layer.trainable = tr
-		self.G.trainable = tr
-		for layer in self.G.layers:
+		self.SN.trainable = tr
+		for layer in self.SN.layers:
 			layer.trainable = tr
 
 	def set_D_trainable(self, tr=True):
@@ -151,8 +153,9 @@ class MyStyleGAN(MyWGAN):
 		
 		geneinp = self.construct_generator_input(pseudo_input_for_const_tensor, inp_sty)
 		
-		gene = self.G(geneinp)
-		gout = self.D(gene)
+		gene = self.SN(geneinp)
+		self.G = Model(inputs=gminp, outputs=gene)
+		gout = self.D(self.G(gminp))
 		
 		self.AM = Model(inputs=gminp, outputs=gout)
 		self.AM.compile(optimizer=self.optimizer, loss=MyWGAN.wasserstein_loss)
@@ -162,15 +165,8 @@ class MyStyleGAN(MyWGAN):
 	
 	def compile_discriminator(self):
 		
-		for layer in self.MN.layers:
-			layer.trainable = True
-		self.MN.trainable = True
-		for layer in self.G.layers:
-			layer.trainable = False
-		self.G.trainable = False
-		for layer in self.D.layers:
-			layer.trainable = True
-		self.D.trainable = True
+		self.set_G_trainable(False)
+		self.set_D_trainable(True)
 		
 		real_samples = Input(shape=self.img_shape)
 		
@@ -179,7 +175,7 @@ class MyStyleGAN(MyWGAN):
 		latent_vector = Input(shape=[self.noise_size])
 		
 		
-		generator_input_for_discriminator = self.construct_generator_input(pseudo_input, latent_vector)
+		generator_input_for_discriminator = [pseudo_input, latent_vector]
 		
 		generated_samples_for_discriminator = self.G(generator_input_for_discriminator)
 		
@@ -202,7 +198,7 @@ class MyStyleGAN(MyWGAN):
 		
 	def generate_samples(self, n_samples):
 		
-		latent_vector = self.noise_generating_rule([n_samples, self.noise_size])
+		latent_vector = self.generate_latent_vector([n_samples, self.noise_size])
 		samples = self.G.predict([np.ones([n_samples,1]),latent_vector])
 		samples = ((samples + 1)*127.5).astype('uint8')
 		
@@ -224,10 +220,10 @@ class MyStyleGAN(MyWGAN):
 		for i in range(iter_per_epoch_g):
 			discriminator_minibatches = data[i*minibatches_size:(i+1)*minibatches_size]
 			for j in range(self.n_critic):
-				latent_vector = self.noise_generating_rule([self.batch_size, self.noise_size])
+				latent_vector = self.generate_latent_vector([self.batch_size, self.noise_size])
 				image_batch = discriminator_minibatches[j*self.batch_size:(j+1)*self.batch_size]
 				discriminator_loss.append(self.DM.train_on_batch([image_batch, positive_y, latent_vector], [positive_y, negative_y, dummy_y]))
-			latent_vector = self.noise_generating_rule([self.batch_size, self.noise_size])
+			latent_vector = self.generate_latent_vector([self.batch_size, self.noise_size])
 			generator_loss.append(self.AM.train_on_batch([positive_y, latent_vector], positive_y))
 			if i%print_term == 0:
 				print('generator iteration per epoch : ', i+1, '/',iter_per_epoch_g, '\ndiscriminator iteration per epoch : ', (i+1)*self.n_critic, '/', iter_per_epoch_g*self.n_critic)
@@ -335,9 +331,10 @@ if __name__=='__main__':
 	D = Dense(1)(D)
 	D = Model(inputs=D_input, outputs=D)
 	
-	gan1.G = G
+	gan1.SN = G
 	gan1.D = D
 	
 	gan1.compile()
 	kds1 = KianaDataSet(folder='kfcp256',load_from_zip=True)
+	gan1.generate_samples(20)
 	gan1.train(kds1.normalized, 2, 0, 1, False)

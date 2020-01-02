@@ -15,7 +15,7 @@ class LearnedConstTensor(Layer):
 		super(LearnedConstTensor, self).__init__(**kwargs)
 		self.shape = tuple(shape)
 		n_w = np.prod(shape)
-		self.w = self.add_weight(shape=(1,n_w), dtype='float32', initializer='he_normal',trainable=True)
+		self.w = self.add_weight(shape=(1,n_w), dtype='float32', initializer='he_normal',trainable=True, name='learnt_const_tensor')
 		
 		
 	def call(self, inputs):

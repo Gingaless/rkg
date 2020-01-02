@@ -240,6 +240,12 @@ class MyStyleGAN(MyWGAN):
 		
 	def get_mn_weight_file_name(self):
 		return '{}-mn.h5'.format(self.weight_file_name)
+
+	def get_sn_weight_file_name(self):
+		return '{}-sn.h5'.format(self.weight_file_name)
+
+	def get_sn_model_file_name(self):
+		return '{}-sn.json'.format(self.model_file_name)
 		
 	def save_models(self):
 		mn_json = self.MN.to_json() 
@@ -253,13 +259,15 @@ class MyStyleGAN(MyWGAN):
 	custom_layers={'LayerNormalization':LayerNormalization, 'ApplyNoise':ApplyNoise,
 	'LearnedConstTensor' : LearnedConstTensor, 'Normalize': Normalize, 'AdaIN':AdaIN,
 	'_RandomWeightedAverage' : _RandomWeightedAverage}):
-		mn_json_file = open(self.get_mn_model_file_name(), "r")
-		mn_model = mn_json_file.read()
-		mn_json_file.close()
-		with CustomObjectScope(custom_layers):
-			self.MN = model_from_json(mn_model)
-		
-		super(MyStyleGAN, self).load_models(custom_layers)
+		mn_json_file = self.get_mn_model_file_name()
+		sn_json_file = self.get_sn_model_file_name()
+		d_json_file = self.D.get_g_model_file_name()
+
+		self.MN = self.load_model(mn_json_file, custom_layers)
+		self.SN = self.load_model(sn_json_file, custom_layers)
+		self.D = self.load_model(d_json_file, custom_layers)
+
+		self.compile()
 		
 	def save_weights(self):
 		
@@ -269,35 +277,29 @@ class MyStyleGAN(MyWGAN):
 		
 	def load_weights(self):
 		
-		self.MN.load_weights(self.get_mn_weight_file_name())
-		
-		super(MyStyleGAN, self).load_weights()
+		mn_w_file = self.get_mn_weight_file_name()
+		sn_w_file = self.get_sn_weight_file_name()
+		d_w_file = self.get_d_weight_file_name()
+		self.load_weight(self.MN, mn_w_file)
+		self.load_weight(self.SN, sn_w_file)
+		self.load_weight(self.D, d_w_file)
 		
 	def zip(self, zipname):
 		
 		zipname = '{}.zip'.format(zipname)
-		mw_zip = zipfile.ZipFile(zipname, 'w')
-		mw_zip.write(self.get_mn_model_file_name(), compress_type=zipfile.ZIP_DEFLATED)
-		mw_zip.write(self.get_mn_weight_file_name(), compress_type=zipfile.ZIP_DEFLATED)
-		mw_zip.write(self.get_d_model_file_name(), compress_type=zipfile.ZIP_DEFLATED)
-		mw_zip.write(self.get_g_model_file_name(), compress_type=zipfile.ZIP_DEFLATED)
-		mw_zip.write(self.get_d_weight_file_name(), compress_type=zipfile.ZIP_DEFLATED)
-		mw_zip.write(self.get_g_weight_file_name(), compress_type=zipfile.ZIP_DEFLATED)
-		mw_zip.close()
+		zf = zipfile.ZipFile(zipname, 'w')
+		sf = [self.get_d_weight_file_name(),self.get_d_model_file_name(),
+		 self.get_mn_model_file_name(), self.get_mn_weight_file_name(),
+		 self.get_sn_model_file_name(), self.get_sn_weight_file_name()]
+		for f in sf:
+			self.write_zip(zf,f)
+		zf.close()
 		print('zip complete.')
 		
 	def load(self):
-		if self.get_d_model_file_name() in listdir() and self.get_g_model_file_name() in listdir() and self.get_mn_model_file_name() in listdir():
-			self.load_models()
-		else:
-			print('there exist no model files.')
-		
-		self.compile()
-		
-		if self.get_d_weight_file_name() in listdir() and self.get_g_weight_file_name() in listdir() and self.get_mn_weight_file_name() in listdir():
-			self.load_weights()
-		else:
-			print('there exist no weight files.')
+
+		self.load_models()
+		self.load_weights()
 		print('load complete.')
 		
 		

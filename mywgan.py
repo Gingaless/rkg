@@ -163,6 +163,13 @@ class MyWGAN:
 	def get_d_model_file_name(self):
 		return '{}-d.json'.format(self.model_file_name)
 
+	def save_model(self, file_name, model):
+		model_json = model.to_json()
+		with open(file_name, "w") as json_file:
+			json_file.write(model_json)
+			json_file.close()
+		print('save model ', model_json, ' complete.')
+
 		
 	def save_models(self):
 		
@@ -176,6 +183,17 @@ class MyWGAN:
 			json_file.write(g_json)
 			json_file.close()
 		print('save models complete.')
+
+	def load_model(self, file_name, custom_layers):
+		assert file_name in listdir()
+		model = None
+		json_file = open(file_name, "r")
+		read_model = json_file.read()
+		json_file.close()
+		with CustomObjectScope(custom_layers):
+			model = model_from_json(read_model)
+		print("load model ", json_file, " complete")
+		return model
 			
 	def load_models(self,custom_layers={'LayerNormalization': LayerNormalization}):
 		d_json_file = open(self.get_d_model_file_name(), "r")
@@ -198,11 +216,21 @@ class MyWGAN:
 		self.D.load_weights(self.get_d_weight_file_name())
 		self.G.load_weights(self.get_g_weight_file_name())
 		print('load weights complete.')
-		
+
+	def load_weight(self, model, file_name):
+		assert file_name in listdir()
+		model.load_weights(file_name)
+		print('load model ', file_name, 'complete')
+
 	def save(self):
 		self.save_models()
 		self.save_weights()
 		print('save complete.')
+
+	def write_zip(self, zip_file, write_file):
+		zip_file.write(write_file, compress_type=zipfile.ZIP_DEFLATED)
+		print('write the content of ', write_file, ' in the zip file.')
+
 		
 	def zip(self,zipname):
 		zipname = '{}.zip'.format(zipname)

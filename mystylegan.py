@@ -261,7 +261,7 @@ class MyStyleGAN(MyWGAN):
 	'_RandomWeightedAverage' : _RandomWeightedAverage}):
 		mn_json_file = self.get_mn_model_file_name()
 		sn_json_file = self.get_sn_model_file_name()
-		d_json_file = self.D.get_g_model_file_name()
+		d_json_file = self.D.get_d_model_file_name()
 
 		self.MN = self.load_model(mn_json_file, custom_layers)
 		self.SN = self.load_model(sn_json_file, custom_layers)

@@ -225,7 +225,7 @@ class MyStyleGAN(MyWGAN):
 				#for real -1, for generated sample 1.
 				discriminator_loss.append(self.DM.train_on_batch([image_batch, positive_y, latent_vector], [negative_y, positive_y, dummy_y]))
 			latent_vector = self.generate_latent_vector([self.batch_size, self.noise_size])
-			generator_loss.append(self.AM.train_on_batch([positive_y, latent_vector], positive_y))
+			generator_loss.append(self.AM.train_on_batch([positive_y, latent_vector], negative_y))
 			if i%print_term == 0:
 				print('generator iteration per epoch : ', i+1, '/',iter_per_epoch_g, '\ndiscriminator iteration per epoch : ', (i+1)*self.n_critic, '/', iter_per_epoch_g*self.n_critic)
 				print('D loss : ', discriminator_loss[-1])

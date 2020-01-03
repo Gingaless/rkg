@@ -48,6 +48,13 @@ class ApplyNoise(Layer):
 		super(ApplyNoise, self).build(input_shape)
 		
 	
+	def get_config(self):
+		config = {'noise_generating_rule' : self.noise_generating_rule,
+		'number of channels' : self.fils}
+		base_config = super(ApplyNoise, self).get_config()
+		return dict(list(base_config.items()) + list(config.items()))
+		
+	
 #input shape should be (batch_size, H, W, C)
 	def call(self, inputs):
 		

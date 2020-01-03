@@ -222,7 +222,8 @@ class MyStyleGAN(MyWGAN):
 			for j in range(self.n_critic):
 				latent_vector = self.generate_latent_vector([self.batch_size, self.noise_size])
 				image_batch = discriminator_minibatches[j*self.batch_size:(j+1)*self.batch_size]
-				discriminator_loss.append(self.DM.train_on_batch([image_batch, positive_y, latent_vector], [positive_y, negative_y, dummy_y]))
+				#for real -1, for generated sample 1.
+				discriminator_loss.append(self.DM.train_on_batch([image_batch, positive_y, latent_vector], [negative_y, positive_y, dummy_y]))
 			latent_vector = self.generate_latent_vector([self.batch_size, self.noise_size])
 			generator_loss.append(self.AM.train_on_batch([positive_y, latent_vector], positive_y))
 			if i%print_term == 0:

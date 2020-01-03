@@ -141,7 +141,8 @@ class MyWGAN:
 			for j in range(self.n_critic):
 				image_batch = discriminator_minibatches[j*self.batch_size:(j+1)*self.batch_size]
 				noise = self.noise_generating_rule(self.batch_size, self.noise_size)
-				discriminator_loss.append(self.discriminator_model.train_on_batch([image_batch, noise], [positive_y, negative_y, dummy_y]))
+				#for real -1, for fake 1.
+				discriminator_loss.append(self.discriminator_model.train_on_batch([image_batch, noise], [negative_y, positive_y, dummy_y]))
 			generator_loss.append(self.generator_model.train_on_batch(self.noise_generating_rule(self.batch_size, self.noise_size), positive_y))
 			if i%print_term == 0:
 				print('generator iteration per epoch : ', i+1, '/',iter_per_epoch_g, '\ndiscriminator iteration per epoch : ', (i+1)*self.n_critic, '/', iter_per_epoch_g*self.n_critic)
@@ -168,7 +169,7 @@ class MyWGAN:
 		with open(file_name, "w") as json_file:
 			json_file.write(model_json)
 			json_file.close()
-		print('save model ', model_json, ' complete.')
+		print('save model ', file_name, ' complete.')
 
 		
 	def save_models(self):

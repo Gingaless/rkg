@@ -40,7 +40,7 @@ class ApplyNoise(Layer):
 	def __init__(self, noise_generating_rule, fils, **kwargs):
 		
 		super(ApplyNoise, self).__init__(**kwargs)
-		if type(a) == partial:
+		if type(noise_generating_rule) == partial:
 			noise_generating_rule = partial(eval(noise_generating_rule['func']), *noise_generating_rule['args'], **noise_generating_rule['kwargs'])
 		self.noise_generating_rule = noise_generating_rule
 		self.fils = self.add_weight(shape=(1,fils),dtype='float32', initializer='he_normal',trainable=True,name='noise_ratio_per_channel')

@@ -113,12 +113,12 @@ class MyWGAN:
 			print(i, 'th epoch train start.')
 			discriminator_loss, generator_loss = self.train_epoch(data, print_samples=print_samples, print_term=print_term)
 			
-			discriminator_loss = abs(np.array(discriminator_loss))
-			generator_loss = abs(np.array(generator_loss))
+			discriminator_loss = discriminator_loss
+			generator_loss = generator_loss
 			
 			print('\nepoch : ', i+1, '/', epoches)
-			print('average abs G loss : ',  np.sum(abs(generator_loss))/len(generator_loss))
-			print('average abs D loss : ', np.sum(abs(discriminator_loss),axis=0)/len(discriminator_loss))
+			print('average G loss : ',  np.mean(generator_loss))
+			print('average D loss : ', np.mean(discriminator_loss,axis=0))
 			print()
 			
 		if saving:

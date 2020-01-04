@@ -55,10 +55,10 @@ def d_block1(fil, inp, p = True):
 
 
 
-#noise generating rule requires 1 argument(noise shape) in this class.
+#noise generating rule requires 1 argument(noise shape) in this class and its type should be partial.
 class MyStyleGAN(MyWGAN):
 	
-	def __init__(self,const_tensor_shape = (4,4,256) ,**kwargs):
+	def __init__(self,const_tensor_shape = (4,4,256) , noise_arguments=dict(), **kwargs):
 		
 		self.const_tensor_shape=const_tensor_shape
 		super(MyStyleGAN, self).__init__(**kwargs)
@@ -315,9 +315,10 @@ class MyStyleGAN(MyWGAN):
 if __name__=='__main__':
 	
 	D = Input(shape=(256,256,3))
-	
+	ngr = partial(K.random_uniform, minval=-1.0, maxval=1.0)
+	ngr.__name__ = 'noise_random_uniform'
 	gan1 = MyStyleGAN(img_shape=(256,256,3),optimizer=Adam(lr=0.001, beta_1 = 0, beta_2=0.99), noise_size=256,
-	noise_generating_rule= (lambda shape : K.random_uniform(shape, -1.0,1.0)))
+	noise_generating_rule= ngr)
 	gan1.MN = gan1.construct_mn(8,256)
 	lconst_tensor = Input(shape=(4,4,256))
 	in_sty = Input(shape=[256])

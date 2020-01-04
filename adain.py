@@ -65,6 +65,8 @@ class AdaIN(Layer):
     
     def get_config(self):
         config = {
+            'input_dim' : self.input_dim,
+            'units' : self.units,
             'axis': self.axis,
             'momentum': self.momentum,
             'epsilon': self.epsilon,

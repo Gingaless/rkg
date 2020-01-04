@@ -4,6 +4,7 @@ from keras.models import Model
 import numpy as np
 from keras.layers import Lambda
 import copy
+from functools import partial
 
 
 '''
@@ -39,8 +40,9 @@ class ApplyNoise(Layer):
 	def __init__(self, noise_generating_rule, fils, **kwargs):
 		
 		super(ApplyNoise, self).__init__(**kwargs)
-		
-		self.noise_generating_rule = copy.deepcopy(noise_generating_rule)
+		if noise_generating_rule is not partial:
+			noise_generating_rule = partial(eval(noise_generating_rule['func']), *noise_generating_rule['args'], **noise_generating_rule['kwargs'])
+		self.noise_generating_rule = noise_generating_rule
 		self.fils = self.add_weight(shape=(1,fils),dtype='float32', initializer='he_normal',trainable=True,name='noise_ratio_per_channel')
 		
 	def build(self, input_shape):
@@ -50,7 +52,10 @@ class ApplyNoise(Layer):
 		
 	
 	def get_config(self):
-		config = {'noise_generating_rule' : self.noise_generating_rule,
+		noise_func = str.split(str(self.noise_generating_rule.func),' ')[1]
+		noise_args = self.noise_generating_rule.args
+		noise_keywords = self.noise_generating_rule.keywords
+		config = {'noise_generating_rule' : {'func' : noise_func, 'args' : noise_args, 'kwargs' : noise_keywords},
 		'number of channels' : self.fils}
 		base_config = super(ApplyNoise, self).get_config()
 		return dict(list(base_config.items()) + list(config.items()))

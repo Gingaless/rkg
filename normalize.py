@@ -15,10 +15,10 @@ class Normalize(Layer):
 		
 		out = (inputs - mean)/stddev
 		return out
-	'''	
+	
 	def compute_output_shape(self, input_shape):
 		return input_shape
-	'''
+	
 	
 if __name__=="__main__":
 	

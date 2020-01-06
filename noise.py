@@ -17,7 +17,7 @@ class Noise(Layer):
 	def __init__(self, noise_generating_rule,shape, **kwargs):
 		
 		super(Noise, self).__init__(**kwargs)
-		self.noise_generating_rule = noise_generating_rule
+		self.noise_generating_rule = copy.deepcopy(noise_generating_rule)
 		
 
 
@@ -37,11 +37,12 @@ class Noise(Layer):
 
 class ApplyNoise(Layer):
 	
-	def __init__(self, noise_generating_rule, fils, **kwargs):
+	def __init__(self, noise_generating_rule, fils, noise_func=None, noise_args=None, noise_keywords=None, **kwargs):
 		
 		super(ApplyNoise, self).__init__(**kwargs)
-		if type(noise_generating_rule) != partial:
-			noise_generating_rule = partial(eval(noise_generating_rule['func']), *noise_generating_rule['args'], **noise_generating_rule['kwargs'])
+		if noise_generating_rule=='loaded_from_outer_model':
+			ngf = eval(noise_func)
+			noise_generating_rule = partial(ngf, *noise_args, **noise_keywords)
 		self.noise_generating_rule = noise_generating_rule
 		self.fils = self.add_weight(shape=(1,fils),dtype='float32', initializer='he_normal',trainable=True,name='noise_ratio_per_channel')
 		
@@ -55,8 +56,8 @@ class ApplyNoise(Layer):
 		noise_func = str.split(str(self.noise_generating_rule.func),' ')[1]
 		noise_args = self.noise_generating_rule.args
 		noise_keywords = self.noise_generating_rule.keywords
-		config = {'noise_generating_rule' : {'func' : noise_func, 'args' : noise_args, 'kwargs' : noise_keywords},
-		'number of channels' : self.fils}
+		config = {'noise_generating_rule' : 'loaded_from_outer_model',
+		'fils' : self.fils, 'noise_func' : noise_func, 'noise_args' : noise_args, 'noise_keywords' : noise_keywords}
 		base_config = super(ApplyNoise, self).get_config()
 		return dict(list(base_config.items()) + list(config.items()))
 		
@@ -73,10 +74,10 @@ class ApplyNoise(Layer):
 		
 		return out
 		
-	'''
+	
 	def compute_output_shape(self, input_shape):
 		return input_shape
-	'''
+	
 
 
 

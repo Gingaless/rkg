@@ -4,7 +4,7 @@ from functools import partial
 
 
 
-from keras.models import Model, Sequential
+from keras.models import Model, Sequential, save_model
 from keras.layers import Input, Dense, Reshape, Flatten, add,Activation, Lambda
 from keras.layers.merge import _Merge
 from keras.layers.convolutional import Conv2D, Conv2DTranspose, Cropping2D, UpSampling2D, AveragePooling2D
@@ -58,7 +58,7 @@ def d_block1(fil, inp, p = True):
 #noise generating rule requires 1 argument(noise shape) in this class and its type should be partial.
 class MyStyleGAN(MyWGAN):
 	
-	def __init__(self,const_tensor_shape = (4,4,256) , noise_arguments=dict(), **kwargs):
+	def __init__(self,const_tensor_shape = (4,4,256) , **kwargs):
 		
 		self.const_tensor_shape=const_tensor_shape
 		super(MyStyleGAN, self).__init__(**kwargs)
@@ -128,7 +128,10 @@ class MyStyleGAN(MyWGAN):
 		for layer in self.D.layers:
 			layer.trainable = tr
 			
-			
+	def sn_input(self, size_i_latent_vec):
+		learnt_const_tensor=Input(shape=self.const_tensor_shape)
+		in_ilv=Input(shape=[size_i_latent_vec])
+		return[learnt_const_tensor, in_ilv]
 			
 	def construct_generator_input(self, pseudo_input_for_const_tensor, latent_vector):
 	
@@ -225,7 +228,7 @@ class MyStyleGAN(MyWGAN):
 				#for real -1, for generated sample 1.
 				discriminator_loss.append(self.DM.train_on_batch([image_batch, positive_y, latent_vector], [negative_y, positive_y, dummy_y]))
 			latent_vector = self.generate_latent_vector([self.batch_size, self.noise_size])
-			generator_loss.append(self.AM.train_on_batch([positive_y, latent_vector], negative_y))
+			generator_loss.append(self.AM.train_on_batch([positive_y, latent_vector], positive_y))
 			if i%print_term == 0:
 				print('generator iteration per epoch : ', i+1, '/',iter_per_epoch_g, '\ndiscriminator iteration per epoch : ', (i+1)*self.n_critic, '/', iter_per_epoch_g*self.n_critic)
 				print('D loss : ', discriminator_loss[-1])
@@ -249,13 +252,20 @@ class MyStyleGAN(MyWGAN):
 		return '{}-sn.json'.format(self.model_file_name)
 		
 	def save_models(self):
+		
 		sn_json = self.get_sn_model_file_name()
 		mn_json = self.get_mn_model_file_name()
 		d_json =self.get_d_model_file_name()
-
+		'''
+		save_model(self.MN, mn_json)
+		save_model(self.D, d_json)
+		save_model(self.SN, sn_json)
+		'''
+		
 		self.save_model(sn_json, self.SN)
 		self.save_model(mn_json, self.MN)
 		self.save_model(d_json, self.D)
+		
 		print('save complete.')
 		
 	def load_models(self,
@@ -320,8 +330,8 @@ if __name__=='__main__':
 	gan1 = MyStyleGAN(img_shape=(256,256,3),optimizer=Adam(lr=0.001, beta_1 = 0, beta_2=0.99), noise_size=256,
 	noise_generating_rule= ngr)
 	gan1.MN = gan1.construct_mn(8,256)
-	lconst_tensor = Input(shape=(4,4,256))
-	in_sty = Input(shape=[256])
+	lconst_tensor = Input(shape=(4,4,256), name = 'learnt_const_tensor')
+	in_sty = Input(shape=[256], name = 'intermediate_latent_vector')
 	G = gan1.construct_g_block1([lconst_tensor, in_sty],256,256,256)#8
 	G = gan1.construct_g_block1(G, 256,256,192)#16
 	G = gan1.construct_g_block1(G,256,192,128)#32
@@ -330,6 +340,7 @@ if __name__=='__main__':
 	G = gan1.construct_g_block1(G,256,48,32)#256
 	G = Conv2D(3,1,padding='same', kernel_initializer='he_normal')(G[0])
 	G = Model(inputs=[lconst_tensor, in_sty], outputs=G)
+	
 	
 	D_input = Input(shape=(256,256,3))
 	D = Conv2D(32, kernel_size=3 , padding='same',kernel_initializer = 'he_normal')(D_input)
@@ -346,6 +357,11 @@ if __name__=='__main__':
 	gan1.D = D
 	
 	gan1.compile()
-	kds1 = KianaDataSet(folder='kfcp256',load_from_zip=True)
-	gan1.generate_samples(20)
-	gan1.train(kds1.normalized, 2, 0, 1, False)
+	
+	for layer in G.layers:
+		print(type(layer))
+		print(layer.get_config())
+	
+	
+	gan1.save_and_zip('test1')
+	#gan1.train(kds1.normalized, 2, 0, 1, False)

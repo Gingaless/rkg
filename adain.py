@@ -27,7 +27,7 @@ class AdaIN(Layer):
         self.w_gamma = self.add_weight(shape=(input_dim, units,), initializer='he_normal',dtype='float', trainable=True,name='adain_w_gamma')
         self.b_gamma = self.add_weight(shape=(units,), initializer='he_normal',dtype='float' ,trainable=True,name='adain_b_gamma')
         self.w_beta = self.add_weight(shape=(input_dim, units,), initializer='he_normal',dtype='float', trainable=True,name='adain_w_beta')
-        self.b_beta = self.add_weight(shape=(units,), initializer='he_normal',dtype='float', trainable=True,name='adain_b_beta')
+        self.b_beta = self.add_weight(shape=(units,), initializer='zeros',dtype='float', trainable=True,name='adain_b_beta')
     
     
     def build(self, input_shape):
@@ -41,7 +41,7 @@ class AdaIN(Layer):
     
         super(AdaIN, self).build(input_shape) 
     
-    def call(self, inputs, training=None):
+    def call(self, inputs):
     	
         input_shape = K.int_shape(inputs[0])
         batch_size = K.shape(inputs[0])[0:1]
@@ -75,11 +75,11 @@ class AdaIN(Layer):
         }
         base_config = super(AdaIN, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
-    '''
+    
     def compute_output_shape(self, input_shape):
     
         return input_shape[0]
-'''
+
 
 
 

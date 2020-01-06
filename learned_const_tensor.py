@@ -18,6 +18,12 @@ class LearnedConstTensor(Layer):
 		self.w = self.add_weight(shape=(1,n_w), dtype='float32', initializer='he_normal',trainable=True, name='learnt_const_tensor')
 		
 		
+	def get_config(self):
+		config = {'shape' : np.array(self.shape)}
+		base_config = super(LearnedConstTensor, self).get_config()
+		return dict(list(base_config.items()) + list(config.items()))
+		
+		
 	def call(self, inputs):
 		
 		batch_size = K.shape(inputs)[0:1]

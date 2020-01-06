@@ -56,6 +56,7 @@ def d_block1(fil, inp, p = True):
 
 
 #noise generating rule requires 1 argument(noise shape) in this class and its type should be partial.
+#you should name the input layer of constant tensors and intermediate latent vector as 'learnt_const_tensor' and 'intermediate_latent_vector', respectively.
 class MyStyleGAN(MyWGAN):
 	
 	def __init__(self,const_tensor_shape = (4,4,256) , **kwargs):

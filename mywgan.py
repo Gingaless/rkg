@@ -33,7 +33,7 @@ K.set_image_data_format('channels_last')
 
 class MyWGAN:
 	
-	def __init__(self, img_shape=(256,256,3), noise_size=100, batch_size = 64, n_ciritic=5, gradient_penalty_weight = 10, optimizer = RMSprop(lr=0.00005), noise_generating_rule = (lambda batchsize, noisesize : np.random.uniform(-1.0, 1.0, size = [batchsize, noisesize])), weight_file_name = 'mywgan1', model_file_name = 'mywgan1'):
+	def __init__(self, img_shape=(256,256,3), noise_size=100, batch_size = 64, n_critic=5, gradient_penalty_weight = 10, optimizer = RMSprop(lr=0.00005), noise_generating_rule = (lambda batchsize, noisesize : np.random.uniform(-1.0, 1.0, size = [batchsize, noisesize])), weight_file_name = 'mywgan1', model_file_name = 'mywgan1'):
 		
 		self.img_shape = img_shape
 		self.img_rows = img_shape[0]
@@ -42,7 +42,7 @@ class MyWGAN:
 		self.noise_size = noise_size
 		self.batch_size = batch_size
 		self.gradient_penalty_weight = gradient_penalty_weight
-		self.n_critic = n_ciritic
+		self.n_critic = n_critic
 		self.weight_file_name = weight_file_name
 		self.model_file_name = model_file_name
 		self.optimizer = optimizer

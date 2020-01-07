@@ -40,14 +40,14 @@ def normalize(arr):
 
 	
 	
-def d_block1(fil, inp, p = True):
+def d_block1(fil, inp, p = True, alpha=0.1):
     
     route2 = Conv2D(filters = fil, kernel_size = 3, padding = 'same', kernel_initializer = 'he_normal')(inp)
-    route2 = LeakyReLU(0.01)(route2)
+    route2 = LeakyReLU(alpha)(route2)
     if p:
         route2 = AveragePooling2D()(route2)
     route2 = Conv2D(filters = fil, kernel_size = 3, padding = 'same', kernel_initializer = 'he_normal')(route2)
-    out = LeakyReLU(0.01)(route2)
+    out = LeakyReLU(alpha)(route2)
     
     return out
 
@@ -94,16 +94,18 @@ class MyStyleGAN(MyWGAN):
 		
 		
 		#noise + adain / conv2d / noise + adain / upsample + conv2d /
-	def construct_g_block1(self, gout, wlen,n_fils1, n_fils2, u=True,size=(2,2)):
+	def construct_g_block1(self, gout, wlen,n_fils1, n_fils2, u=True,size=(2,2),alpha=0.1):
 		
 		inp = gout[0]
 		w = gout[1]
 		out = ApplyNoise(noise_generating_rule=self.noise_generating_rule, fils=n_fils1)(inp)
 		out = AdaIN(wlen,n_fils1)([out,w])
+		out = LeakyReLU(alpha)(out)
 		out = Conv2D(n_fils1, kernel_size=3, strides=1, padding='same', kernel_initializer='he_normal')(out)
 		
 		out = ApplyNoise(noise_generating_rule=self.noise_generating_rule, fils=n_fils1)(out)
 		out = AdaIN(wlen,n_fils1)([out,w])
+		out = LeakyReLU(alpha)(out)
 						
 		if u:
 			

@@ -14,6 +14,7 @@ The inputs for call function are the shapes of noises.
 
 class Noise(Layer):
 	
+	
 	def __init__(self, noise_generating_rule,shape, **kwargs):
 		
 		super(Noise, self).__init__(**kwargs)
@@ -37,13 +38,19 @@ class Noise(Layer):
 
 class ApplyNoise(Layer):
 	
+	noise_func_names={
+	'random_normal' : K.random_normal,
+	'random_uniform' : K.random_uniform
+	}
+	
 	def __init__(self, noise_generating_rule, fils, noise_func=None, noise_args=None, noise_keywords=None, **kwargs):
 		
 		super(ApplyNoise, self).__init__(**kwargs)
 		if noise_generating_rule=='loaded_from_outer_model':
-			ngf = eval(noise_func)
+			ngf = ApplyNoise.noise_func_names[noise_func]
 			noise_generating_rule = partial(ngf, *noise_args, **noise_keywords)
 		self.noise_generating_rule = noise_generating_rule
+		self.channels = fils
 		self.fils = self.add_weight(shape=(1,fils),dtype='float32', initializer='he_normal',trainable=True,name='noise_ratio_per_channel')
 		
 	def build(self, input_shape):
@@ -57,7 +64,7 @@ class ApplyNoise(Layer):
 		noise_args = self.noise_generating_rule.args
 		noise_keywords = self.noise_generating_rule.keywords
 		config = {'noise_generating_rule' : 'loaded_from_outer_model',
-		'fils' : self.fils, 'noise_func' : noise_func, 'noise_args' : noise_args, 'noise_keywords' : noise_keywords}
+		'fils' : self.channels, 'noise_func' : noise_func, 'noise_args' : noise_args, 'noise_keywords' : noise_keywords}
 		base_config = super(ApplyNoise, self).get_config()
 		return dict(list(base_config.items()) + list(config.items()))
 		
@@ -88,7 +95,7 @@ if __name__=='__main__':
 	mu = 0
 	sigma = 1.0
 	shape = (4,4,1)
-	ngr = lambda shape : K.random_normal(mean=mu, stddev = sigma, shape=shape)
+	ngr = partial(K.random_normal,mean=mu, stddev = sigma)
 	
 	inp=Input(shape=(4,4,2))
 	a = np.ones(shape=(2,4,4,2)).astype('float32')
@@ -96,4 +103,5 @@ if __name__=='__main__':
 	m=Model(inp,an(inp))
 	m.summary()
 	print(m.predict(a))
+	print(an.noise_generating_rule.func)
 	print(ngr([2,5]), dtype='float32')

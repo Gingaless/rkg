@@ -11,6 +11,7 @@ from keras.layers.convolutional import Conv2D, Conv2DTranspose, Cropping2D, UpSa
 from keras.layers.normalization import BatchNormalization
 from keras.layers.advanced_activations import LeakyReLU
 from keras.optimizers import Adam
+from keras.engine.input_layer import InputLayer
 from keras.optimizers import RMSprop
 from keras import backend as K
 import mywgan
@@ -56,8 +57,9 @@ def d_block1(fil, inp, p = True):
 
 
 #noise generating rule requires 1 argument(noise shape) in this class and its type should be partial.
-#you should name the input layer of constant tensors and intermediate latent vector as 'learnt_const_tensor' and 'intermediate_latent_vector', respectively.
+
 class MyStyleGAN(MyWGAN):
+	
 	
 	def __init__(self,const_tensor_shape = (4,4,256) , **kwargs):
 		
@@ -252,6 +254,8 @@ class MyStyleGAN(MyWGAN):
 	def get_sn_model_file_name(self):
 		return '{}-sn.json'.format(self.model_file_name)
 		
+				
+		
 	def save_models(self):
 		
 		sn_json = self.get_sn_model_file_name()
@@ -356,7 +360,7 @@ if __name__=='__main__':
 	
 	gan1.SN = G
 	gan1.D = D
-	
+	'''
 	gan1.compile()
 	
 	for layer in G.layers:
@@ -365,4 +369,8 @@ if __name__=='__main__':
 	
 	
 	gan1.save_and_zip('test1')
-	#gan1.train(kds1.normalized, 2, 0, 1, False)
+	'''
+	gan1.unzip_and_load('test1')
+	'''
+	gan1.train(kds1.normalized, 2, 0, 1, False)
+	'''

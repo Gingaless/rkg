@@ -14,8 +14,8 @@ from keras.optimizers import Adam
 from keras.engine.input_layer import InputLayer
 from keras.optimizers import RMSprop
 from keras import backend as K
-import mywgan
 from mywgan import MyWGAN
+import mywgan
 from mywgan import RandomWeightedAverage
 from adain import AdaIN
 from noise import ApplyNoise
@@ -166,7 +166,7 @@ class MyStyleGAN(MyWGAN):
 		gout = self.D(self.G(gminp))
 		
 		self.AM = Model(inputs=gminp, outputs=gout)
-		self.AM.compile(optimizer=self.optimizer, loss=MyWGAN.wasserstein_loss)
+		self.AM.compile(optimizer=self.optimizer, loss=self.AM_loss)
 		
 	
 		
@@ -190,15 +190,18 @@ class MyStyleGAN(MyWGAN):
 		
 		discriminator_output_from_generator = self.D(generated_samples_for_discriminator)
 		discriminator_output_from_real_samples =self.D(real_samples)
+		DM_output = [discriminator_output_from_real_samples, discriminator_output_from_generator]
+		if self.extend_gp:
+			averaged_samples = _RandomWeightedAverage()([real_samples, generated_samples_for_discriminator])
+			averaged_samples_out = self.D(averaged_samples)
+			partial_gp_loss = partial(MyWGAN.gradient_penalty_loss,averaged_samples=averaged_samples, gradient_penalty_weight=self.gradient_penalty_weight)
+			partial_gp_loss.__name__ = 'gradient_penalty'
+			DM_output = DM_output + [averaged_samples_out]
+			self.DM_loss = self.DM_loss + [partial_gp_loss]
 		
-		averaged_samples = _RandomWeightedAverage()([real_samples, generated_samples_for_discriminator])
-		averaged_samples_out = self.D(averaged_samples)
-		partial_gp_loss = partial(MyWGAN.gradient_penalty_loss,averaged_samples=averaged_samples, gradient_penalty_weight=self.gradient_penalty_weight)
-		partial_gp_loss.__name__ = 'gradient_penalty'
+		self.DM = Model(inputs=[real_samples, pseudo_input, latent_vector], outputs=DM_output)
 		
-		self.DM = Model(inputs=[real_samples, pseudo_input, latent_vector], outputs=[discriminator_output_from_real_samples, discriminator_output_from_generator, averaged_samples_out])
-		
-		self.DM.compile(optimizer=self.optimizer, loss = [MyWGAN.wasserstein_loss, MyWGAN.wasserstein_loss, partial_gp_loss])
+		self.DM.compile(optimizer=self.optimizer, loss = self.DM_loss)
 		
 	def compile(self):
 		self.compile_generator()

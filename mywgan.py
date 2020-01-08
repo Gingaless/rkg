@@ -31,9 +31,21 @@ import numpy as np
 K.set_image_data_format('channels_last')
 
 
+def wasserstein_loss(y_true, y_pred):
+	return K.mean(y_true*y_pred)
+	
+def gradient_penalty_loss(y_true, y_pred, averaged_samples, gradient_penalty_weight):
+	gradients = K.gradients(y_pred, averaged_samples)[0]
+	gradients_sqr = K.square(gradients)
+	gradients_sqr_sum = K.sum(gradients_sqr, axis=np.arange(1, len(gradients_sqr.shape)))
+	gradient_l2_norm = K.sqrt(gradients_sqr_sum)
+	gradient_penalty = gradient_penalty_weight * K.square(1 - gradient_l2_norm)
+	return K.mean(gradient_penalty)
+
+
 class MyWGAN:
 	
-	def __init__(self, img_shape=(256,256,3), noise_size=100, batch_size = 64, n_critic=5, gradient_penalty_weight = 10, optimizer = RMSprop(lr=0.00005), noise_generating_rule = (lambda batchsize, noisesize : np.random.uniform(-1.0, 1.0, size = [batchsize, noisesize])), weight_file_name = 'mywgan1', model_file_name = 'mywgan1'):
+	def __init__(self, img_shape=(256,256,3), noise_size=100, batch_size = 64, n_critic=5, gradient_penalty_weight = 10, optimizer = RMSprop(lr=0.00005), noise_generating_rule = (lambda batchsize, noisesize : np.random.uniform(-1.0, 1.0, size = [batchsize, noisesize])), weight_file_name = 'mywgan1', model_file_name = 'mywgan1', DM_loss=[wasserstein_loss, wasserstein_loss], AM_loss=wasserstein_loss, extend_gp=True):
 		
 		self.img_shape = img_shape
 		self.img_rows = img_shape[0]
@@ -51,18 +63,9 @@ class MyWGAN:
 		self.generator_model = Model()
 		self.discriminator_model = Model()
 		self.noise_generating_rule = noise_generating_rule
-		
-		
-	def wasserstein_loss(y_true, y_pred):
-			return K.mean(y_true*y_pred)
-			
-	def gradient_penalty_loss(y_true, y_pred, averaged_samples, gradient_penalty_weight):
-		gradients = K.gradients(y_pred, averaged_samples)[0]
-		gradients_sqr = K.square(gradients)
-		gradients_sqr_sum = K.sum(gradients_sqr, axis=np.arange(1, len(gradients_sqr.shape)))
-		gradient_l2_norm = K.sqrt(gradients_sqr_sum)
-		gradient_penalty = gradient_penalty_weight * K.square(1 - gradient_l2_norm)
-		return K.mean(gradient_penalty)
+		self.DM_loss = DM_loss
+		self.AM_loss = AM_loss
+		self.extend_gp = extend_gp
 		
 	
 	def compile_model(self,D, G):
@@ -81,7 +84,7 @@ class MyWGAN:
 		generator_layers = self.G(generator_input)
 		discriminator_layers_for_generator = self.D(generator_layers)
 		self.generator_model = Model(inputs=[generator_input], outputs= [discriminator_layers_for_generator])
-		self.generator_model.compile(optimizer=self.optimizer, loss = MyWGAN.wasserstein_loss)
+		self.generator_model.compile(optimizer=self.optimizer, loss = self.AM_loss)
 		
 		#build discriminator model
 		for layer in self.G.layers:
@@ -101,11 +104,11 @@ class MyWGAN:
 		
 		averaged_samples = RandomWeightedAverage(self.batch_size)([real_samples, generated_samples_for_discriminator])
 		averaged_samples_out = self.D(averaged_samples)
-		partial_gp_loss = partial(MyWGAN.gradient_penalty_loss,averaged_samples=averaged_samples, gradient_penalty_weight=self.gradient_penalty_weight)
+		partial_gp_loss = partial(gradient_penalty_loss,averaged_samples=averaged_samples, gradient_penalty_weight=self.gradient_penalty_weight)
 		partial_gp_loss.__name__ = 'gradient_penalty'
 		
 		self.discriminator_model = Model(inputs=[real_samples,generator_input_for_discriminator], outputs=[discriminator_output_from_real_samples, discriminator_output_from_generator, averaged_samples_out])
-		self.discriminator_model.compile(optimizer=self.optimizer, loss=[MyWGAN.wasserstein_loss, MyWGAN.wasserstein_loss, partial_gp_loss])
+		self.discriminator_model.compile(optimizer=self.optimizer, loss=self.DM_loss)
 		
 	def train(self, data, epoches, print_samples=0, print_term=10, saving=True):
 		

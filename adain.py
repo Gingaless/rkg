@@ -11,7 +11,7 @@ class AdaIN(Layer):
     def __init__(self, input_dim, units,
              axis=-1,
              momentum=0.99,
-             epsilon=1e-3,
+             epsilon=1e-7,
              center=True,
              scale=True,
              **kwargs):
@@ -57,7 +57,7 @@ class AdaIN(Layer):
         gamma = K.reshape(gamma, shp)
         
         mean = K.mean(inputs[0], reduction_axes, keepdims=True)
-        stddev = K.std(inputs[0], reduction_axes, keepdims=True)
+        stddev = K.std(inputs[0], reduction_axes, keepdims=True) + self.epsilon
         normed = (inputs[0] - mean)/stddev
         
         

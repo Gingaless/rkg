@@ -45,7 +45,11 @@ def gradient_penalty_loss(y_true, y_pred, averaged_samples, gradient_penalty_wei
 
 class MyWGAN:
 	
-	def __init__(self, img_shape=(256,256,3), noise_size=100, batch_size = 64, n_critic=5, gradient_penalty_weight = 10, optimizer = RMSprop(lr=0.00005), noise_generating_rule = (lambda batchsize, noisesize : np.random.uniform(-1.0, 1.0, size = [batchsize, noisesize])), weight_file_name = 'mywgan1', model_file_name = 'mywgan1', DM_loss=[wasserstein_loss, wasserstein_loss], AM_loss=wasserstein_loss, extend_gp=True):
+	def __init__(self, img_shape=(256,256,3), noise_size=100, batch_size = 64, n_critic=5, gradient_penalty_weight = 10, optimizer = RMSprop(lr=0.00005), 
+	noise_generating_rule = (lambda batchsize, noisesize : np.random.uniform(-1.0, 1.0, size = [batchsize, noisesize])), 
+	weight_file_name = 'mywgan1', model_file_name = 'mywgan1', 
+ DM_loss=[wasserstein_loss, wasserstein_loss], AM_loss=wasserstein_loss, extend_gp=True,
+ valid= -1.0,fake=1.0, t_am = 1.0,gp=0.0):
 		
 		self.img_shape = img_shape
 		self.img_rows = img_shape[0]
@@ -66,6 +70,10 @@ class MyWGAN:
 		self.DM_loss = DM_loss
 		self.AM_loss = AM_loss
 		self.extend_gp = extend_gp
+		self.valid = valid*np.ones((self.batch_size, 1), dtype=np.float32)
+		self.fake = fake*np.ones((self.batch_size, 1), dtype=np.float32)
+		self.t_am = t_am*np.ones((self.batch_size, 1), dtype=np.float32)
+		self.gp = gp*np.ones((self.batch_size, 1), dtype=np.float32)
 		
 	
 	def compile_model(self,D, G):

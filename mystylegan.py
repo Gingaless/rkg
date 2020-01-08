@@ -74,10 +74,6 @@ class MyStyleGAN(MyWGAN):
 		self.DM = Model()
 		self.generate_latent_vector = lambda shape : K.eval(self.noise_generating_rule(shape))
 		
-		self.positive_y = np.ones((self.batch_size, 1), dtype=np.float32)
-		self.negative_y = -self.positive_y
-		self.dummy_y = np.zeros((self.batch_size, 1), dtype=np.float32)
-		
 		
 		
 		
@@ -221,10 +217,7 @@ class MyStyleGAN(MyWGAN):
 	def train_epoch(self, data, print_term=10, print_samples=0):
 		
 		np.random.shuffle(data)
-		positive_y = np.ones((self.batch_size, 1), dtype=np.float32)
-		negative_y = -positive_y
-		dummy_y = np.zeros((self.batch_size, 1), dtype=np.float32)
-		
+		positive_y = np.ones((self.batch_size, 1),dtype=np.float)
 		discriminator_loss = []
 		generator_loss = []
 		minibatches_size = self.batch_size*self.n_critic
@@ -235,9 +228,12 @@ class MyStyleGAN(MyWGAN):
 				latent_vector = self.generate_latent_vector([self.batch_size, self.noise_size])
 				image_batch = discriminator_minibatches[j*self.batch_size:(j+1)*self.batch_size]
 				#for real -1, for generated sample 1.
-				discriminator_loss.append(self.DM.train_on_batch([image_batch, positive_y, latent_vector], [negative_y, positive_y, dummy_y]))
+				if self.extend_gp:
+					discriminator_loss.append(self.DM.train_on_batch([image_batch, positive_y, latent_vector], [self.valid, self.fake, self.gp]))
+				else:
+					discriminator_loss.append(self.DM.train_on_batch([image_batch, positive_y, latent_vector], [self.valid, self.fake]))
 			latent_vector = self.generate_latent_vector([self.batch_size, self.noise_size])
-			generator_loss.append(self.AM.train_on_batch([positive_y, latent_vector], positive_y))
+			generator_loss.append(self.AM.train_on_batch([positive_y, latent_vector], self.t_am))
 			if i%print_term == 0:
 				print('generator iteration per epoch : ', i+1, '/',iter_per_epoch_g, '\ndiscriminator iteration per epoch : ', (i+1)*self.n_critic, '/', iter_per_epoch_g*self.n_critic)
 				print('D loss : ', discriminator_loss[-1])

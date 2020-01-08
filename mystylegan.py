@@ -17,6 +17,7 @@ from keras import backend as K
 from mywgan import MyWGAN
 import mywgan
 from mywgan import RandomWeightedAverage
+from mywgan import gradient_penalty_loss
 from adain import AdaIN
 from noise import ApplyNoise
 from learned_const_tensor import LearnedConstTensor
@@ -194,7 +195,7 @@ class MyStyleGAN(MyWGAN):
 		if self.extend_gp:
 			averaged_samples = _RandomWeightedAverage()([real_samples, generated_samples_for_discriminator])
 			averaged_samples_out = self.D(averaged_samples)
-			partial_gp_loss = partial(MyWGAN.gradient_penalty_loss,averaged_samples=averaged_samples, gradient_penalty_weight=self.gradient_penalty_weight)
+			partial_gp_loss = partial(gradient_penalty_loss,averaged_samples=averaged_samples, gradient_penalty_weight=self.gradient_penalty_weight)
 			partial_gp_loss.__name__ = 'gradient_penalty'
 			DM_output = DM_output + [averaged_samples_out]
 			self.DM_loss = self.DM_loss + [partial_gp_loss]

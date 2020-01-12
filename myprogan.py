@@ -107,12 +107,12 @@ class MyProGAN:
     	fake = self.generators[i].predict(self.generate_inputs_for_G(**kwargs))
     	return [real,fake]
     	
-    def output_layers_for_G(self, idx):
+    def mk_output_layers_for_G(self, idx):
     	lc = Conv2D(3, 1, padding = 'same', kernel_initializer = 'he_normal', name = 'last_conv2d_G')(self.generators[idx])
     	actanh = Activation('tanh', name = 'tanh_G')(lc)
     	return actanh
     	
-    def output_layers_for_D(self, idx,alpha=0.1):
+    def mk_output_layers_for_D(self, idx,alpha=0.1):
     	last_channels = K.int_shape(self.discriminators[idx])[-1]
     	lc = Conv2D(last_channels,5,2,padding='same', kernel_initializer='he_normal',name = 'last_conv2d_D')(self.discriminators[idx])
     	relu = LeakyReLU(alpha, name='last_lrelu_D')(lc)
@@ -144,10 +144,10 @@ class MyProGAN:
     	return self.discriminators[idx](self.chain_discriminators(idx-1)) if idx>0 else self.discriminators[idx]
     	
     def mk_generator(self,idx):
-    	return self.output_layers_for_G(self.chain_generators(idx))
+    	return self.mk_output_layers_for_G(self.chain_generators(idx))
     	
     def mk_discriminator(self,idx):
-    	return self.output_layers_for_D(self.chain_discriminators(idx))
+    	return self.mk_output_layers_for_D(self.chain_discriminators(idx))
     	
     	
     	

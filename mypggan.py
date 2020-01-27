@@ -273,10 +273,10 @@ class MyPGGAN(object):
 		path = os.path.join(self.model_info_dir,'models')
 		if not os.path.exists(path):
 			os.mkdir(path)
-		for layer in gan.D.layers:
+		for layer in self.D.layers:
 			if not isinstance(layer, InputLayer):
 				save_model(layer,os.path.join(path,layer.name))
-		for layer in gan.G.layers:
+		for layer in self.G.layers:
 			if not isinstance(layer, InputLayer):
 				save_model(layer, os.path.join(path,layer.name))
 

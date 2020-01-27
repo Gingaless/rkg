@@ -3,6 +3,7 @@ from keras.models import Model
 import keras.backend as K
 
 
+#앞에께 old고 뒤에께 new
 class WeightedSum(Add):
 	
 	def __init__(self, alpha=0.0, **kwargs):

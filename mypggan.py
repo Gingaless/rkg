@@ -319,10 +319,10 @@ class MyPGGAN(object):
 		path = os.path.join(self.model_info_dir,'weights')
 		if not os.path.exists(path):
 			os.mkdir(path)
-		for layer in gan.D.layers:
+		for layer in self.D.layers:
 			if not isinstance(layer, InputLayer):
 				layer.save_weights(os.path.join(path, layer.name + '.h5'))
-		for layer in gan.G.layers:
+		for layer in self.G.layers:
 			if not isinstance(layer, InputLayer):
 				layer.save_weights(os.path.join(path, layer.name + '.h5'))
 

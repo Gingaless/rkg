@@ -9,7 +9,6 @@ from keras.optimizers import Adam
 from keras import backend as K
 from keras.models import model_from_json
 from keras.utils import CustomObjectScope
-from keras_layer_normalization import LayerNormalization
 from normalize import Normalize
 from os import listdir
 import zipfile
@@ -22,7 +21,7 @@ from pixnorm import PixelNormalization
 from minibatchstdev import MiniBatchStandardDeviation
 from weightedsum import WeightedSum
 import manage_data
-from manage_data import save_model, load_model, zip, unzip, load_image_batch, generate_sample_image
+from manage_data import save_model, load_model, zip, unzip, load_image_batch, generate_sample_image, save_layer, load_layer
 
 
 
@@ -107,11 +106,16 @@ class MyPGGAN(object):
 
 	#output layer model 뒤에 붇이면 댐
 	def mk_merge_layers_for_G(self,step,old_output_layers, scale=2):
+		ws_name = 'weighted_sum_{}_for _G'.format(str(step))
 		pv_block_end = Input(shape=self.generators[step-1].output_shape[1:])
 		old_block_end = old_output_layers(pv_block_end)
 		new_image = Input(shape=self.img_shape[step])
 		old_img_upsampling = UpSampling2D(scale)(old_block_end)
-		merged = WeightedSum()([old_img_upsampling, new_image])
+		merged = None
+		if os.path.exists(os.path.join(self.model_info_dir, 'models', ws_name + 'json')):
+			merged = load_layer(os.path.join(self.model_info_dir, 'models', ws_name))
+		else:
+			merged = WeightedSum(name = ws_name)([old_img_upsampling, new_image])
 		return Model(inputs=[pv_block_end, new_image], outputs = merged, name = 'merge_layers_' + str(step) + '_for_G')
 		
 		
@@ -152,12 +156,17 @@ class MyPGGAN(object):
 
 	#input layer model 뒤에 붙이면 댐
 	def mk_merge_layers_for_D(self,step, old_input_layers, depth=128,scale=2):
-
+		
+		ws_name = 'weighted_sum_{}_for_D'.format(str(step))
 		raw_inp = Input(shape=self.img_shape[step])
 		new_d_block_pass_inp = Input(shape=self.img_shape[step-1][:2] + (depth,))
 		raw_inp_pooling = AveragePooling2D(scale)(raw_inp)
 		old_inp_block_pass = old_input_layers(raw_inp_pooling)
-		merged = WeightedSum()([old_inp_block_pass, new_d_block_pass_inp])
+		merged = None
+		if os.path.exists(os.path.join(self.model_info_dir, 'models', ws_name + 'json')):
+			merged = load_layer(os.path.join(self.model_info_dir, 'models', ws_name))
+		else:
+			merged = WeightedSum(name=ws_name)([old_inp_block_pass, new_d_block_pass_inp])
 		return Model(inputs=[raw_inp, new_d_block_pass_inp], outputs = merged, name = 'merge_layers_' + str(step) + '_for_D')
 
 
@@ -273,10 +282,24 @@ class MyPGGAN(object):
 		path = os.path.join(self.model_info_dir,'models')
 		if not os.path.exists(path):
 			os.mkdir(path)
+			
 		for layer in self.D.layers:
+			if 'merge' in layer.name:
+				for layer2 in layer.layers:
+					if isinstance(layer2, Model):
+						save_model(layer2, os.path.join(path, layer2.name))
+					elif isinstance(layer2, WeightedSum):
+						save_layer(layer2, os.path.join(path, layer2.name))
 			if not isinstance(layer, InputLayer):
 				save_model(layer,os.path.join(path,layer.name))
+			
 		for layer in self.G.layers:
+			if 'merge' in layer.name:
+				for layer2 in layer.layers:
+					if isinstance(layer2, Model):
+						save_model(layer2, os.path.join(path, layer2.name))
+					elif isinstance(layer2, WeightedSum):
+						save_layer(layer2, os.path.join(path, layer2.name))
 			if not isinstance(layer, InputLayer):
 				save_model(layer, os.path.join(path,layer.name))
 
@@ -426,8 +449,8 @@ class MyPGGAN(object):
 					mean_DM_loss = np.mean(DM_loss[-print_term:], axis=0)
 					mean_AM_loss = np.mean(AM_loss[-print_term:])
 					print('iteration_per_epoch : {}/{}'.format(num_iter, iter_per_epoch))
-					print('mean_of_DM : ', mean_DM_loss)
-					print('mean_of_AM : ', mean_AM_loss)
+					print('mean_of_DM_losd : ', mean_DM_loss)
+					print('mean_of_AM_loss : ', mean_AM_loss)
 					print()
 
 		return DM_loss, AM_loss
@@ -449,12 +472,16 @@ class MyPGGAN(object):
 			mean_AM_loss = np.mean(AM_loss)
 			print()
 			print('epoch : {}/{}'.format(i+1, epoches))
-			print('mean_of_DM : ', mean_DM_loss)
-			print('mean_of_AM : ', mean_AM_loss)
+			print('mean_of_DM_loss : ', mean_DM_loss)
+			print('mean_of_AM_loss : ', mean_AM_loss)
 			print()
 		print()
 		print('train complete.')
 		print('\n\n')
+		
+		
+		
+		
 
 		
 

@@ -4,8 +4,10 @@ import os
 from PIL import Image
 from keras.models import model_from_json
 from keras.utils import CustomObjectScope
+from keras.utils.layer_utils import layer_from_config
 import zipfile
 from copy import deepcopy
+import json
 
 
 max_load_img = 512
@@ -127,8 +129,22 @@ def load_model(filename, custom_layers=None):
         with CustomObjectScope(custom_layers):
             model = model_from_json(read_model)
     return model
+    
+def save_layer(layer, path):
+	
+	fp = path + '.json'
+	
+	with open(fp, 'w') as json_file:
+		json.dump(layer.get_config(), json_file)
+		
 
-
+def load_layer(path):
+	
+	fp = path + '.json'
+	config = {}
+	with open(fp) as json_file:
+		config = json.load(json_file)
+	return layer_from_config(config)
     
 
 

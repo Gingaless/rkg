@@ -113,7 +113,7 @@ class MyPGGAN(object):
 		old_img_upsampling = UpSampling2D(scale)(old_block_end)
 		merged = None
 		if os.path.exists(os.path.join(self.model_info_dir, 'models', ws_name + '.json')):
-			merged = load_layer(os.path.join(self.model_info_dir, 'models', ws_name), self.custom_layers)
+			merged = load_layer(os.path.join(self.model_info_dir, 'models', ws_name), self.custom_layers)([old_img_upsampling, new_image])
 		else:
 			merged = WeightedSum(name = ws_name)([old_img_upsampling, new_image])
 		return Model(inputs=[pv_block_end, new_image], outputs = merged, name = 'merge_layers_' + str(step) + '_for_G')
@@ -164,7 +164,7 @@ class MyPGGAN(object):
 		old_inp_block_pass = old_input_layers(raw_inp_pooling)
 		merged = None
 		if os.path.exists(os.path.join(self.model_info_dir, 'models', ws_name + '.json')):
-			merged = load_layer(os.path.join(self.model_info_dir, 'models', ws_name),self.custom_layers)
+			merged = load_layer(os.path.join(self.model_info_dir, 'models', ws_name),self.custom_layers)([old_inp_block_pass, new_d_block_pass_inp])
 		else:
 			merged = WeightedSum(name=ws_name)([old_inp_block_pass, new_d_block_pass_inp])
 		return Model(inputs=[raw_inp, new_d_block_pass_inp], outputs = merged, name = 'merge_layers_' + str(step) + '_for_D')

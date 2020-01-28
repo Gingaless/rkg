@@ -106,7 +106,7 @@ class MyPGGAN(object):
 
 	#output layer model 뒤에 붇이면 댐
 	def mk_merge_layers_for_G(self,step,old_output_layers, scale=2):
-		ws_name = 'weighted_sum_{}_for _G'.format(str(step))
+		ws_name = 'weighted_sum_{}_for_G'.format(str(step))
 		pv_block_end = Input(shape=self.generators[step-1].output_shape[1:])
 		old_block_end = old_output_layers(pv_block_end)
 		new_image = Input(shape=self.img_shape[step])

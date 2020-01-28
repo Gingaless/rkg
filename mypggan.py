@@ -73,7 +73,7 @@ class MyPGGAN(object):
 		self.noise_func = noise_func
 		
 		
-	def mk_input_layers_for_G(self, step, depth=128):
+	def mk_input_layers_for_G(self, step, depth=200):
 		
 		in_latent = Input(shape=[self.latent_size])
 		g = Dense(np.prod(self.img_shape[0][0:2] + (depth,)), 
@@ -84,7 +84,7 @@ class MyPGGAN(object):
 		return Model(inputs = in_latent, outputs = g, name = 'input_layers_' + str(step) + '_for_G')
 		
 		
-	def mk_G_block(self, step, depth=128,scale=2):
+	def mk_G_block(self, step, depth=200,scale=2):
 
 		inp = Input(shape=self.img_shape[0][:2] + (depth,))
 		g = inp
@@ -130,7 +130,7 @@ class MyPGGAN(object):
 
 	
 			
-	def mk_input_layers_for_D(self,step,depth=128):
+	def mk_input_layers_for_D(self,step,depth=200):
 		
 		inp = Input(shape=self.img_shape[step])
 		d = Conv2D(depth, 1, **MyPGGAN.kernel_cond)(inp)
@@ -139,7 +139,7 @@ class MyPGGAN(object):
 		return Model(inputs=inp, outputs=d, name='input_layers_' + str(step) + '_for_D')
 
 
-	def mk_D_block(self, step, depth=128, scale=2):
+	def mk_D_block(self, step, depth=200, scale=2):
 
 		
 		inp = Input(shape=self.img_shape[step][:2] + (depth,))
@@ -155,7 +155,7 @@ class MyPGGAN(object):
 
 
 	#input layer model 뒤에 붙이면 댐
-	def mk_merge_layers_for_D(self,step, old_input_layers, depth=128,scale=2):
+	def mk_merge_layers_for_D(self,step, old_input_layers, depth=200,scale=2):
 		
 		ws_name = 'weighted_sum_{}_for_D'.format(str(step))
 		raw_inp = Input(shape=self.img_shape[step])
@@ -172,7 +172,7 @@ class MyPGGAN(object):
 
 
 
-	def mk_output_layers_for_D(self,step,depth=128):
+	def mk_output_layers_for_D(self,step,depth=200):
 
 		inp = Input(shape=self.discriminators[0].output_shape[1:])
 		d = MiniBatchStandardDeviation()(inp)
@@ -183,7 +183,7 @@ class MyPGGAN(object):
 		return Model(inputs = inp, outputs=d, name='output_layers_' + str(step) + '_for_D')
 
 
-	def initialize_DnG_chains(self,depth=128,scale=2):
+	def initialize_DnG_chains(self,depth=200,scale=2):
 
 		for i in range(self.num_steps):
 			self.generators[i] = self.mk_G_block(i,depth,scale)

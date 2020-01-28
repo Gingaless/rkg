@@ -19,7 +19,7 @@ from keras.constraints import max_norm
 from keras.initializers import RandomNormal
 from pixnorm import PixelNormalization
 from minibatchstdev import MiniBatchStandardDeviation
-from weightedsum import WeightedSum
+from weightedsum import WeightedSum, update_fadein
 import manage_data
 from manage_data import save_model, load_model, zip, unzip, load_image_batch, generate_sample_image, save_layer, load_layer
 
@@ -421,6 +421,7 @@ class MyPGGAN(object):
 		fake_y = np.zeros([batch_size,1])
 		DM_loss.append(self.DM.train_on_batch(real_samples, real_y))
 		DM_loss.append(self.DM.train_on_batch(fake, fake_y))
+		update_fadein(self.DM)
 		return DM_loss
 
 	def train_AM(self, batch_size):
@@ -429,6 +430,7 @@ class MyPGGAN(object):
 		latent_vectors = self.noise_func(batch_size, self.latent_size)
 		fake_y = np.ones([batch_size,1])
 		AM_loss += self.AM.train_on_batch(latent_vectors,fake_y)
+		update_fadein(self.AM)
 		return AM_loss
 
 	def train_on_epoch(self, step, batch_size, print_term=0):
@@ -501,8 +503,12 @@ if __name__=='__main__':
 	gan.build_D(0)
 	gan.build_G(0)
 	gan.compile()
-	gan.save(True)
-	gan.train(0, 2, 16, 0,True)
+	gan.save(False)
+	gan.train(0, 1, 32, 1,True)
+	gan.save(False)
+	gan.load(1, True)
+	gan.compile()
+	gan.train(1,1,32,1,False)
 	sample_img = gan.generate_samples(30)
 	sample_img = Image.fromarray(sample_img.astype('uint8'))
 	sample_img.show()

@@ -112,7 +112,7 @@ class MyPGGAN(object):
 		new_image = Input(shape=self.img_shape[step])
 		old_img_upsampling = UpSampling2D(scale)(old_block_end)
 		merged = None
-		if os.path.exists(os.path.join(self.model_info_dir, 'models', ws_name + 'json')):
+		if os.path.exists(os.path.join(self.model_info_dir, 'models', ws_name + '.json')):
 			merged = load_layer(os.path.join(self.model_info_dir, 'models', ws_name))
 		else:
 			merged = WeightedSum(name = ws_name)([old_img_upsampling, new_image])
@@ -163,7 +163,7 @@ class MyPGGAN(object):
 		raw_inp_pooling = AveragePooling2D(scale)(raw_inp)
 		old_inp_block_pass = old_input_layers(raw_inp_pooling)
 		merged = None
-		if os.path.exists(os.path.join(self.model_info_dir, 'models', ws_name + 'json')):
+		if os.path.exists(os.path.join(self.model_info_dir, 'models', ws_name + '.json')):
 			merged = load_layer(os.path.join(self.model_info_dir, 'models', ws_name))
 		else:
 			merged = WeightedSum(name=ws_name)([old_inp_block_pass, new_d_block_pass_inp])

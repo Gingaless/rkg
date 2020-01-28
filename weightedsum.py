@@ -29,7 +29,7 @@ class WeightedSum(Add):
 	def get_config(self):
 		
 		base_config = list(super(WeightedSum, self).get_config().items())
-		config = list({'alpha' : float(K.eval(self.alpha)), 'alpha_step' : self.alpha_step, 'class_name' : 'WeightedSum'}.items())
+		config = list({'alpha' : float(K.eval(self.alpha)), 'alpha_step' : self.alpha_step}.items())
 		return dict(config + base_config)
 		
 

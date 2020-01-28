@@ -4,7 +4,7 @@ import os
 from PIL import Image
 from keras.models import model_from_json
 from keras.utils import CustomObjectScope
-from keras.layers import deserialize as layer_from_config
+from keras.layers import deserialize as layer_from_config, serialize
 import zipfile
 from copy import deepcopy
 import json
@@ -135,7 +135,7 @@ def save_layer(layer, path):
 	fp = path + '.json'
 	
 	with open(fp, 'w') as json_file:
-		json.dump(layer.get_config(), json_file)
+		json.dump(serialize(layer), json_file)
 		
 
 def load_layer(path):

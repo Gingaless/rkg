@@ -36,7 +36,7 @@ def update_fadein(model):
 	
 	for layer in model.layers:
 		if isinstance(layer, WeightedSum):
-			layer.alpha += np.clip(layer.alpha_step,0.0,1.0)
+			layer.alpha = np.clip(layer.alpha + layer.alpha_step,0.0,1.0)
 		elif isinstance(layer, Model):
 			update_fadein(layer)
 		

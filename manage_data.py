@@ -4,7 +4,7 @@ import os
 from PIL import Image
 from keras.models import model_from_json
 from keras.utils import CustomObjectScope
-from keras.utils.layer_utils import layer_from_config
+from keras.layers import deserialize as layer_from_config
 import zipfile
 from copy import deepcopy
 import json

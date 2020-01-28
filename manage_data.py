@@ -138,13 +138,19 @@ def save_layer(layer, path):
 		json.dump(serialize(layer), json_file)
 		
 
-def load_layer(path):
-	
-	fp = path + '.json'
-	config = {}
-	with open(fp) as json_file:
-		config = json.load(json_file)
-	return layer_from_config(config)
+def load_layer(path, custom_layers={}):
+    
+    fp = path + '.json'
+    config = {}
+    layer = None
+    
+    with open(fp) as json_file:
+        config = json.load(json_file)
+        
+    with CustomObjectScope(custom_layers):
+        layer = layer_from_config(config)
+
+    return layer
     
 
 

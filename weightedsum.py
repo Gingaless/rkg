@@ -1,5 +1,6 @@
 from keras.layers import Add, Input, Dense
 from keras.models import Model
+import keras.backend as K
 import numpy as np
 from keras.optimizers import Adam
 
@@ -12,7 +13,7 @@ class WeightedSum(Add):
 		super(WeightedSum, self).__init__(**kwargs)
 		self.alpha = alpha
 		self.alpha_step = alpha_step
-		self.alpha = alpha
+		self.alpha = K.variable(alpha)
 		self.alpha_step = alpha_step
 		self.trainable = False
 		
@@ -28,7 +29,7 @@ class WeightedSum(Add):
 	def get_config(self):
 		
 		base_config = list(super(WeightedSum, self).get_config().items())
-		config = list({'alpha' : self.alpha, 'alpha_step' : self.alpha_step}.items())
+		config = list({'alpha' : K.eval(self.alpha), 'alpha_step' : self.alpha_step}.items())
 		return dict(config + base_config)
 		
 
@@ -36,9 +37,23 @@ def update_fadein(model):
 	
 	for layer in model.layers:
 		if isinstance(layer, WeightedSum):
-			layer.alpha = np.clip(layer.alpha + layer.alpha_step,0.0,1.0)
+			K.set_value(layer.alpha, K.eval(layer.alpha) + layer.alpha_step)
 		elif isinstance(layer, Model):
 			update_fadein(layer)
+
+def set_fadein(model, alpha, alpha_step, name=None):
+
+	for layer in model.layers:
+		if isinstance(layer, WeightedSum):
+			if name==None:
+				K.set_value(layer.alpha, alpha)
+				layer.alpha_step = alpha_step
+			else:
+				if layer.name==name:
+					layer.alpha = alpha
+					layer.alpha_step = alpha_step
+		elif isinstance(layer, Model):
+			set_fadein(layer,alpha,alpha_step,name)
 		
 		
 		
@@ -60,5 +75,5 @@ if __name__=='__main__':
 	y = np.ones([4,1])
 	m.train_on_batch([x,x], y)
 	update_fadein(m)
-	print(m.layers[2].alpha)
+	print(K.eval(m.layers[2].alpha))
 	

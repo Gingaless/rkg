@@ -19,7 +19,7 @@ from keras.constraints import max_norm
 from keras.initializers import RandomNormal
 from pixnorm import PixelNormalization
 from minibatchstdev import MiniBatchStandardDeviation
-from weightedsum import WeightedSum, update_fadein
+from weightedsum import WeightedSum, update_fadein, set_fadein
 import manage_data
 from manage_data import save_model, load_model, zip, unzip, load_image_batch, generate_sample_image, save_layer, load_layer
 
@@ -35,8 +35,8 @@ class MyPGGAN(object):
 	
 	def __init__(self,
 	latent_size = 1024,
-	heights = [8,16,32,64,128,256],
-	widths = [8,16,32,64,128,256],
+	heights = [4,8,16,32,64,128,256],
+	widths = [4,8,16,32,64,128,256],
 	AM_loss = 'mse', DM_loss = 'mse',
 	AM_optimizer = Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
 	DM_optimizer = Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
@@ -503,12 +503,29 @@ if __name__=='__main__':
 	gan.build_D(0)
 	gan.build_G(0)
 	gan.compile()
+	gan.G.summary()
+	sample_img = gan.generate_samples(10)
+	sample_img = Image.fromarray(sample_img.astype('uint8'))
+	sample_img.show()
 	gan.save(False)
-	gan.train(0, 1, 32, 1,True)
+	gan.train(0, 2, 32, 1,True)
+	sample_img = gan.generate_samples(10)
+	sample_img = Image.fromarray(sample_img.astype('uint8'))
+	sample_img.show()
 	gan.save(False)
 	gan.load(1, True)
 	gan.compile()
-	gan.train(1,1,32,1,False)
-	sample_img = gan.generate_samples(30)
+	gan.G.summary()
+	set_fadein(gan.G, 1.0, 0.01)
+	sample_img = gan.generate_samples(10)
+	sample_img = Image.fromarray(sample_img.astype('uint8'))
+	sample_img.show()
+	set_fadein(gan.G, 0.0, 0.01)
+	set_fadein(gan.D, 0.0, 0.01)
+	sample_img = gan.generate_samples(10)
+	sample_img = Image.fromarray(sample_img.astype('uint8'))
+	sample_img.show()
+	gan.train(1,2,32,1,False)
+	sample_img = gan.generate_samples(10)
 	sample_img = Image.fromarray(sample_img.astype('uint8'))
 	sample_img.show()

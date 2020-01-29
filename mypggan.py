@@ -46,7 +46,7 @@ class MyPGGAN(object):
 	'WeightedSum' : WeightedSum},
 	model_info_dir = 'mypggan1',
 	img_src = 'kfcp256fp',
-	noise_func = lambda num, size : np.clip(np.random.normal(1,0.5,(num,size)),-2.0,2.0)):
+	noise_func = lambda num, size : np.clip(np.random.normal(0.0,1.0,(num,size)),-2.0,2.0)):
 		
 		assert len(heights)==len(widths)
 		self.latent_size = latent_size
@@ -338,7 +338,7 @@ class MyPGGAN(object):
 		if os.path.exists(path_outD + '.json'):
 			output_layers_for_D = load_model(path_outD, self.custom_layers)
 		elif os.path.exists(path_outD2 + '.json'):
-			output_layers_for_D = load_model(path_outD, self.custom_layers)
+			output_layers_for_D = load_model(path_outD2, self.custom_layers)
 			
 		if os.path.exists(path_outG + '.json'):
 			output_layers_for_G = load_model(path_outG, self.custom_layers)

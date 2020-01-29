@@ -393,8 +393,11 @@ class MyPGGAN(object):
 		if unzipQ:
 			unzip(self.model_info_dir)
 			print('unzip complete.')
+		input_layers_for_D, input_layers_for_G,output_layers_for_D, output_layers_for_G = self.load_models(step)
+		
+		input_layers_for_G.name = 'input_layers_{}_for_G'.format(step)
+		output_layers_for_D.name = 'output_layers_{}_for_D'.format(step)
 
-		input_layers_for_D, input_layers_for_G, output_layers_for_D, output_layers_for_G = self.load_models(step)
 		merged_old_output_layers_for_G = None
 		merged_old_input_layers_for_D = None
 

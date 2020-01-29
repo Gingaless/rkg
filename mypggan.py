@@ -434,7 +434,7 @@ class MyPGGAN(object):
 		fake_y = np.zeros([batch_size,1])
 		DM_loss.append(self.DM.train_on_batch(real_samples, real_y))
 		DM_loss.append(self.DM.train_on_batch(fake, fake_y))
-		update_fadein(self.DM)
+		update_fadein(self.D)
 		return DM_loss
 
 	def train_AM(self, batch_size):
@@ -443,7 +443,7 @@ class MyPGGAN(object):
 		latent_vectors = self.noise_func(batch_size, self.latent_size)
 		fake_y = np.ones([batch_size,1])
 		AM_loss += self.AM.train_on_batch(latent_vectors,fake_y)
-		update_fadein(self.AM)
+		update_fadein(self.G)
 		return AM_loss
 
 	def train_on_epoch(self, step, batch_size, print_term=0):
@@ -464,7 +464,7 @@ class MyPGGAN(object):
 					mean_DM_loss = np.mean(DM_loss[-print_term:], axis=0)
 					mean_AM_loss = np.mean(AM_loss[-print_term:])
 					print('iteration_per_epoch : {}/{}'.format(num_iter, iter_per_epoch))
-					print('mean_of_DM_losd : ', mean_DM_loss)
+					print('mean_of_DM_loss : ', mean_DM_loss)
 					print('mean_of_AM_loss : ', mean_AM_loss)
 					print()
 

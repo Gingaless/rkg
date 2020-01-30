@@ -24,10 +24,10 @@ class AdaIN(Layer):
         self.input_dim = input_dim
         self.units = units
         
-        self.w_gamma = self.add_weight(shape=(input_dim, units,), initializer='he_normal',dtype='float', trainable=True,name='adain_w_gamma')
-        self.b_gamma = self.add_weight(shape=(units,), initializer='zeros',dtype='float' ,trainable=True,name='adain_b_gamma')
-        self.w_beta = self.add_weight(shape=(input_dim, units,), initializer='he_normal',dtype='float', trainable=True,name='adain_w_beta')
-        self.b_beta = self.add_weight(shape=(units,), initializer='zeros',dtype='float', trainable=True,name='adain_b_beta')
+        self.w_gamma = self.add_weight(shape=(input_dim, units,), initializer=super.initializer,constraint=super.constraint,dtype='float', trainable=True,name='adain_w_gamma')
+        self.b_gamma = self.add_weight(shape=(units,), initializer=super.initializer,constraint=super.constraint,dtype='float' ,trainable=True,name='adain_b_gamma')
+        self.w_beta = self.add_weight(shape=(input_dim, units,), initializer=super.initializer,constraint=super.constraint,dtype='float', trainable=True,name='adain_w_beta')
+        self.b_beta = self.add_weight(shape=(units,), initializer=super.initializer,constraint=super.constraint,dtype='float', trainable=True,name='adain_b_beta')
     
     
     def build(self, input_shape):
@@ -144,31 +144,3 @@ class SPADE(Layer):
         
         
         
-        
-'''
-a = K.random_normal(mean=0,stddev=1,shape=[3,2,2,4])
-b = K.random_normal(mean=0,stddev=1,shape=[2,2,2])
-r = K.random_uniform(minval=0, maxval=1.0,shape=[3,2])
-print(a)
-print(b)
-
-      
-c = K.dot(a,b)
-f = K.function([],[c])
-print(f(1))
-
-styinp=Input(shape=[2])
-inp = Input(shape=[2,2,4])
-ad = AdaIN(2,4)
-out = ad([inp,styinp])
-f = K.function([inp,styinp],out)
-print(f([a,r]),np.shape(f([a,r])))
-inp2 = Input(shape=[2,2])
-inp3 = LayerNormalization()(inp2)
-arr = np.arange(0,4).reshape((2,2))
-mu = np.mean(arr)
-sigma = np.std(arr)
-print((arr - mu)/sigma)
-f=K.function([inp2],[inp3])
-print(f(arr))
-'''

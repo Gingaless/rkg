@@ -51,7 +51,7 @@ class ApplyNoise(Layer):
 			noise_generating_rule = partial(ngf, *noise_args, **noise_keywords)
 		self.noise_generating_rule = noise_generating_rule
 		self.channels = fils
-		self.fils = self.add_weight(shape=(1,fils),dtype='float32', initializer='he_normal',trainable=True,name='noise_ratio_per_channel')
+		self.fils = self.add_weight(shape=(1,fils),dtype='float32', initializer=super.initializer, constraint=super.constraint, trainable=True,name='noise_ratio_per_channel')
 		
 	def build(self, input_shape):
 		

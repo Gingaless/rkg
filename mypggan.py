@@ -24,6 +24,7 @@ import manage_data
 from manage_data import save_model, load_model, zip, unzip, load_image_batch, generate_sample_image, save_layer, load_layer
 
 
+init_depth = 200
 
 
 class MyPGGAN(object):
@@ -73,23 +74,23 @@ class MyPGGAN(object):
 		self.noise_func = noise_func
 		
 		
-	def mk_input_layers_for_G(self, step, depth=200):
+	def mk_input_layers_for_G(self, step):
 		
 		in_latent = Input(shape=[self.latent_size])
-		g = Dense(np.prod(self.img_shape[0][0:2] + (depth,)), 
+		g = Dense(np.prod(self.img_shape[0][0:2] + (init_depth,)), 
 		kernel_initializer = MyPGGAN.init, 
 		kernel_constraint = MyPGGAN.const)(in_latent)
-		g = Reshape(self.img_shape[0][0:2] + (depth,))(g)
+		g = Reshape(self.img_shape[0][0:2] + (init_depth,))(g)
 
 		return Model(inputs = in_latent, outputs = g, name = 'input_layers_' + str(step) + '_for_G')
 		
 		
 	def mk_G_block(self, step, depth=200,scale=2):
-
-		inp = Input(shape=self.img_shape[0][:2] + (depth,))
+		
+		inp = Input(shape=self.img_shape[0][:2] + (init_depth))
 		g = inp
 		if step>0:
-			block_end = Input(shape=K.int_shape(self.generators[step-1].output)[1:])
+			block_end = Input(shape=self.generators[step-1].output_shape[1:])
 			inp = block_end
 			upsampling = UpSampling2D(scale)(block_end)
 			g = upsampling
@@ -133,16 +134,21 @@ class MyPGGAN(object):
 	def mk_input_layers_for_D(self,step,depth=200):
 		
 		inp = Input(shape=self.img_shape[step])
-		d = Conv2D(depth, 1, **MyPGGAN.kernel_cond)(inp)
+		d = Conv2D(init_depth, 1, **MyPGGAN.kernel_cond)(inp)
+		if isinstance(self.discriminators[step], Model):
+			d = Conv2D(self.discriminators[step].input_shape[-1], 1, **MyPGGAN.kernel_cond)(inp)
 		d = LeakyReLU(0.2)(d)
 		
 		return Model(inputs=inp, outputs=d, name='input_layers_' + str(step) + '_for_D')
 
 
 	def mk_D_block(self, step, depth=200, scale=2):
-
 		
 		inp = Input(shape=self.img_shape[step][:2] + (depth,))
+		
+		if step+1 < self.num_steps and self.discriminators[step+1] != None:
+			inp = Input(shape=self.discriminators[step+1].output_shape[1:])
+			
 		d = inp
 		d = Conv2D(depth, (3,3), padding='same', **MyPGGAN.kernel_cond)(d)
 		d = LeakyReLU(alpha=0.2)(d)
@@ -155,11 +161,11 @@ class MyPGGAN(object):
 
 
 	#input layer model 뒤에 붙이면 댐
-	def mk_merge_layers_for_D(self,step, old_input_layers, depth=200,scale=2):
+	def mk_merge_layers_for_D(self,step, old_input_layers,scale=2):
 		
 		ws_name = 'weighted_sum_{}_for_D'.format(str(step))
 		raw_inp = Input(shape=self.img_shape[step])
-		new_d_block_pass_inp = Input(shape=self.img_shape[step-1][:2] + (depth,))
+		new_d_block_pass_inp = Input(shape=self.discriminators[step].input_shape[1:])
 		raw_inp_pooling = AveragePooling2D(scale)(raw_inp)
 		old_inp_block_pass = old_input_layers(raw_inp_pooling)
 		merged = None
@@ -172,7 +178,7 @@ class MyPGGAN(object):
 
 
 
-	def mk_output_layers_for_D(self,step,depth=200):
+	def mk_output_layers_for_D(self,step):
 
 		inp = Input(shape=self.discriminators[0].output_shape[1:])
 		d = MiniBatchStandardDeviation()(inp)
@@ -187,7 +193,7 @@ class MyPGGAN(object):
 
 		for i in range(self.num_steps):
 			self.generators[i] = self.mk_G_block(i,depth,scale)
-			self.discriminators[i] = self.mk_D_block(i,depth,scale)
+			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(i,depth,scale)
 
 
 

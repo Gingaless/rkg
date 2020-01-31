@@ -4,7 +4,6 @@ from keras.layers import Layer, Input
 from keras import backend as K
 from keras.models import Model
 import numpy as np
-from keras.layers import Reshape
 
 
 #You must set inputs as np.ones(shape=[batch_size, 1])

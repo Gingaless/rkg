@@ -1,30 +1,23 @@
+
 import numpy as np
 import os
-from functools import partial
-from keras.models import Model, Sequential, save_model
+from keras.models import Model
 from keras.layers import Input, InputLayer, Dense, Reshape, Flatten, Activation, Layer
 from keras.layers.convolutional import Conv2D, UpSampling2D, AveragePooling2D
 from keras.layers.advanced_activations import LeakyReLU
 from keras.optimizers import Adam
 from keras import backend as K
-from keras.models import model_from_json
-from keras.utils import CustomObjectScope
-from normalize import Normalize
-from os import listdir
-import zipfile
 from PIL import Image
-from rwa import _RandomWeightedAverage
-from kds import KianaDataSet
 from keras.constraints import max_norm
 from keras.initializers import RandomNormal
 from pixnorm import PixelNormalization
 from minibatchstdev import MiniBatchStandardDeviation
 from weightedsum import WeightedSum, update_fadein, set_fadein
-import manage_data
-from manage_data import save_model, load_model, zip, unzip, load_image_batch, generate_sample_image, save_layer, load_layer
+from manage_data import  _zip, unzip, load_image_batch, generate_sample_image
+from manage_model import set_model_trainable, save_model, load_model, save_layer, load_layer
 
 
-init_depth = 200
+init_depth = 256
 
 
 class MyPGGAN(object):
@@ -41,6 +34,7 @@ class MyPGGAN(object):
 	AM_loss = 'mse', DM_loss = 'mse',
 	AM_optimizer = Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
 	DM_optimizer = Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
+	n_critic = 2, 
 	custom_layers = 
 	{'PixelNormalization' : PixelNormalization,
 	'MiniBatchStandardDeviation' : MiniBatchStandardDeviation,
@@ -61,7 +55,6 @@ class MyPGGAN(object):
 		self.img_src = img_src
 		self.generators = np.empty(self.num_steps, dtype=Model)
 		self.discriminators = np.empty(self.num_steps, dtype=Model)
-		self.training_block = 0
 		self.AM_optimizer = AM_optimizer
 		self.DM_optimizer = DM_optimizer
 		self.AM_loss = AM_loss
@@ -72,6 +65,7 @@ class MyPGGAN(object):
 		self.AM = Model()
 		self.custom_layers = custom_layers
 		self.noise_func = noise_func
+		self.n_critic = n_critic
 		
 		
 	def mk_input_layers_for_G(self, step):
@@ -87,7 +81,7 @@ class MyPGGAN(object):
 		
 	def mk_G_block(self, step, depth=200,scale=2):
 		
-		inp = Input(shape=self.img_shape[0][:2] + (init_depth))
+		inp = Input(shape=self.img_shape[0][:2] + (init_depth,))
 		g = inp
 		if step>0:
 			block_end = Input(shape=self.generators[step-1].output_shape[1:])
@@ -131,7 +125,7 @@ class MyPGGAN(object):
 
 	
 			
-	def mk_input_layers_for_D(self,step,depth=200):
+	def mk_input_layers_for_D(self,step):
 		
 		inp = Input(shape=self.img_shape[step])
 		d = Conv2D(init_depth, 1, **MyPGGAN.kernel_cond)(inp)
@@ -165,7 +159,7 @@ class MyPGGAN(object):
 		
 		ws_name = 'weighted_sum_{}_for_D'.format(str(step))
 		raw_inp = Input(shape=self.img_shape[step])
-		new_d_block_pass_inp = Input(shape=self.discriminators[step].input_shape[1:])
+		new_d_block_pass_inp = Input(shape=self.discriminators[step].output_shape[1:])
 		raw_inp_pooling = AveragePooling2D(scale)(raw_inp)
 		old_inp_block_pass = old_input_layers(raw_inp_pooling)
 		merged = None
@@ -189,11 +183,11 @@ class MyPGGAN(object):
 		return Model(inputs = inp, outputs=d, name='output_layers_' + str(step) + '_for_D')
 
 
-	def initialize_DnG_chains(self,depth=200,scale=2):
+	def initialize_DnG_chains(self,scale=2):
 
 		for i in range(self.num_steps):
-			self.generators[i] = self.mk_G_block(i,depth,scale)
-			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(i,depth,scale)
+			self.generators[i] = self.mk_G_block(i,init_depth,scale)
+			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,init_depth,scale)
 
 
 
@@ -245,23 +239,12 @@ class MyPGGAN(object):
 		self.G = Model(inputs=inp, outputs=G)
 
 
-
-	def set_model_trainable(self, model, trainable):
-
-		model.trainable = trainable
-		for layer in model.layers:
-			layer.trainable = trainable
-			if isinstance(layer, Layer):
-				continue
-			else:
-				self.set_model_trainable(layer,trainable)
-
 	
 	def compile_DM(self):
 
 		inp = self.D.layers[0].input
-		self.set_model_trainable(self.G, False)
-		self.set_model_trainable(self.D, True)
+		set_model_trainable(self.G, False)
+		set_model_trainable(self.D, True)
 		out = self.D(inp)
 
 		self.DM = Model(inputs=inp, outputs=out)
@@ -269,8 +252,8 @@ class MyPGGAN(object):
 
 	def compile_AM(self):
 
-		self.set_model_trainable(self.D,False)
-		self.set_model_trainable(self.G,True)
+		set_model_trainable(self.D,False)
+		set_model_trainable(self.G,True)
 		out = self.D(self.G.output)
 
 		self.AM = Model(inputs=self.G.input, outputs=out)
@@ -391,7 +374,7 @@ class MyPGGAN(object):
 		self.save_weights()
 		print('save complete.')
 		if zipQ:
-			zip(self.model_info_dir)
+			_zip(self.model_info_dir)
 			print('zip complete.')
 
 	def load(self, step, merge=False, unzipQ=False):
@@ -426,9 +409,27 @@ class MyPGGAN(object):
 
 		self.build_D(step,input_layers_for_D, output_layers_for_D, merged_old_input_layers_for_D)
 		self.build_G(step, input_layers_for_G, output_layers_for_G, merged_old_output_layers_for_G)
-
+		
+		
+	def random_input_vector_for_G(self, batch_size):
+		
+		return self.noise_func(batch_size, self.latent_size)
+		
+	def y_for_GM(self, batch_size):
+		
+		return np.ones([batch_size, 1])
+		
+	def real_y_for_DM(self, batch_size):
+		
+		return np.ones([batch_size, 1])
+		
+	def fake_y_for_DM(self, batch_size):
+		
+		return np.zeros([batch_size, 1])
+	
+	
 	def generate_fake(self,batch_size):
-		latent_vectors = self.noise_func(batch_size, self.latent_size)
+		latent_vectors = self.random_input_vector_for_G(batch_size)
 		fake = self.G.predict(latent_vectors)
 		return fake
 
@@ -436,8 +437,8 @@ class MyPGGAN(object):
 		
 		DM_loss = []
 		fake = self.generate_fake(batch_size)
-		real_y = np.ones([batch_size,1])
-		fake_y = np.zeros([batch_size,1])
+		real_y = self.real_y_for_DM(batch_size)
+		fake_y = self.fake_y_for_DM(batch_size)
 		DM_loss.append(self.DM.train_on_batch(real_samples, real_y))
 		DM_loss.append(self.DM.train_on_batch(fake, fake_y))
 		update_fadein(self.D)
@@ -446,8 +447,8 @@ class MyPGGAN(object):
 	def train_AM(self, batch_size):
 
 		AM_loss = 0
-		latent_vectors = self.noise_func(batch_size, self.latent_size)
-		fake_y = np.ones([batch_size,1])
+		latent_vectors = self.random_input_vector_for_G(batch_size)
+		fake_y = self.y_for_GM(batch_size)
 		AM_loss += self.AM.train_on_batch(latent_vectors,fake_y)
 		update_fadein(self.G)
 		return AM_loss
@@ -457,22 +458,36 @@ class MyPGGAN(object):
 		path = os.path.join(self.img_src, str(self.heights[step]) + 'x' + str(self.widths[step]))
 		AM_loss = []
 		DM_loss = []
-		num_iter = 0
+		num_iter = 0 # num of iteration of DM
+		num_iter_am = 0 # num of iteration of AM
+		buf_iter_am = 0
 		iter_per_epoch = len([f for f in os.listdir(path) if ('jpg' in f or 'jpeg' in f)]) // batch_size
+		
 		for real_samples in load_image_batch(path, self.img_shape[step][:2], batch_size):
 
 			DM_loss.append(self.train_DM(real_samples,batch_size))
 			AM_loss.append(self.train_AM(batch_size))
 			num_iter += 1
+			if num_iter % self.n_critic == 0 or num_iter >= iter_per_epoch:
+				AM_loss.append(self.train_AM(batch_size))
+				num_iter_am += 1
+				buf_iter_am += 1
 
 			if print_term>0:
 				if num_iter % print_term==0 and num_iter > 0:
-					mean_DM_loss = np.mean(DM_loss[-print_term:], axis=0)
-					mean_AM_loss = np.mean(AM_loss[-print_term:])
-					print('iteration_per_epoch : {}/{}'.format(num_iter, iter_per_epoch))
-					print('mean_of_DM_loss : ', mean_DM_loss)
-					print('mean_of_AM_loss : ', mean_AM_loss)
+					
+					dict_dm = self.summarize_loss(DM_loss, print_term)
+					dict_am = self.summarize_loss(AM_loss, buf_iter_am)
+					buf_iter_am = 0
+					
+					print('iteration per epoch : {}/{}'.format(num_iter, iter_per_epoch))
+					print('  DM loss : ')
+					self.print_loss(dict_dm, 4)
+					print('  AM loss : ')
+					self.print_loss(dict_am, 4)
 					print()
+					
+					
 
 		return DM_loss, AM_loss
 
@@ -480,29 +495,49 @@ class MyPGGAN(object):
 		samples = self.generate_fake(num_samples)
 		samples = generate_sample_image(samples)
 		return samples
+		
+	def summarize_loss(self, loss, print_term):
+		
+		if print_term < 1:
+			print_term = 1
+		
+		mean_loss = np.mean(loss[-print_term:], axis=0)
+		max_loss = np.max(loss[-print_term:], axis=0)
+		min_loss = np.min(loss[-print_term:], axis=0)
+		
+		dict_summary = []
+		dict_summary.append(('mean', mean_loss))
+		dict_summary.append(('max', max_loss))
+		dict_summary.append(('min', min_loss))
+		return dict(dict_summary)
+		
+	def print_loss(self, dict_summary, indention=0):
+		
+		for key, val in dict_summary.items():
+			print(' '*indention + key + ' : ' + str(val))	
 
 	
 	def train(self, step, epoches, batch_size, print_term=0, unzip_images=False):
+		
+		print('train start.\n\n')
 
 		if unzip_images:
 			unzip(self.img_src)
 
 		for i in range(epoches):
 			DM_loss, AM_loss = self.train_on_epoch(step, batch_size, print_term)
-			mean_DM_loss = np.mean(DM_loss, axis=0)
-			mean_AM_loss = np.mean(AM_loss)
+			dict_DM = self.summarize_loss(DM_loss, len(DM_loss))
+			dict_AM = self.summarize_loss(AM_loss, len(AM_loss))
 			print()
 			print('epoch : {}/{}'.format(i+1, epoches))
-			print('mean_of_DM_loss : ', mean_DM_loss)
-			print('mean_of_AM_loss : ', mean_AM_loss)
+			print('  DM loss : ')
+			self.print_loss(dict_DM, 4)
+			print('  AM loss : ')
+			self.print_loss(dict_AM, 4)
 			print()
 		print()
 		print('train complete.')
 		print('\n\n')
-		
-		
-		
-		
 
 		
 
@@ -518,6 +553,7 @@ class MyPGGAN(object):
 if __name__=='__main__':
 
 	gan = MyPGGAN()
+	'''
 	gan.initialize_DnG_chains()
 	gan.build_D(0)
 	gan.build_G(0)
@@ -527,14 +563,16 @@ if __name__=='__main__':
 	sample_img = Image.fromarray(sample_img.astype('uint8'))
 	sample_img.show()
 	gan.save(False)
-	gan.train(0, 2, 32, 1,True)
+	gan.train(0, 2, 16, 3,True)
 	sample_img = gan.generate_samples(10)
 	sample_img = Image.fromarray(sample_img.astype('uint8'))
 	sample_img.show()
 	gan.save(False)
+	'''
 	gan.load(1, True)
 	gan.compile()
 	gan.G.summary()
+	gan.D.summary()
 	set_fadein(gan.G, 1.0, 0.01)
 	sample_img = gan.generate_samples(10)
 	sample_img = Image.fromarray(sample_img.astype('uint8'))
@@ -544,7 +582,8 @@ if __name__=='__main__':
 	sample_img = gan.generate_samples(10)
 	sample_img = Image.fromarray(sample_img.astype('uint8'))
 	sample_img.show()
-	gan.train(1,2,32,1,False)
+	gan.save(True)
+	gan.train(1,2,32,1,True)
 	sample_img = gan.generate_samples(10)
 	sample_img = Image.fromarray(sample_img.astype('uint8'))
 	sample_img.show()

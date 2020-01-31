@@ -13,7 +13,7 @@ import json
 max_load_img = 512
 
 
-def zip(src):
+def _zip(src):
 
     assert os.path.exists(src)
     zipf = zipfile.ZipFile('{}.zip'.format(src),'w',zipfile.ZIP_DEFLATED)
@@ -108,50 +108,7 @@ def generate_sample_image(img_arr, min_size=(128,128),cols=4):
     return imgs
 
 
-def save_model(model, filename):
-    model_json = model.to_json()
-    filename = '{}.json'.format(filename)
-    with open(filename, "w") as json_file:
-        json_file.write(model_json)
-        json_file.close()
 
-
-def load_model(filename, custom_layers=None):
-    filename = '{}.json'.format(filename)
-    assert os.path.exists(filename)
-    model = None
-    json_file = open(filename, "r")
-    read_model = json_file.read()
-    json_file.close()
-    if custom_layers==None:
-        model = model_from_json(read_model)
-    else:
-        with CustomObjectScope(custom_layers):
-            model = model_from_json(read_model)
-    return model
-    
-def save_layer(layer, path):
-	
-	fp = path + '.json'
-	
-	with open(fp, 'w') as json_file:
-		json.dump(serialize(layer), json_file)
-		
-
-def load_layer(path, custom_layers={}):
-    
-    fp = path + '.json'
-    config = {}
-    layer = None
-    
-    with open(fp) as json_file:
-        config = json.load(json_file)
-        
-    with CustomObjectScope(custom_layers):
-        layer = layer_from_config(config)
-
-    return layer
-    
 
 
 if __name__=='__main__':

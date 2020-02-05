@@ -31,11 +31,12 @@ class LearnedConstTensor(Layer):
 		shp = K.cast(shp,dtype='int32')
 		shp = K.concatenate([batch_size, shp])
 		out = K.dot(inputs,self.w)
-		out = K.reshape(out, shp)
+		out = K.reshape(out, self.compute_output_shape(K.shape(inputs)))
 		return out
 		
 	
 	def compute_output_shape(self, input_shape):
+		
 		return (input_shape[0],) + self.shape
 	
 		

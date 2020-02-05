@@ -18,13 +18,13 @@ from manage_model import set_model_trainable, save_model, load_model, save_layer
 
 
 init_depth = 256
+init = RandomNormal(stddev=0.02)
+const = max_norm(1.0)
+kernel_cond = {'kernel_initializer' : init, 'kernel_constraint' : const}
 
 
 class MyPGGAN(object):
 	
-	init = RandomNormal(stddev=0.02)
-	const = max_norm(1.0)
-	kernel_cond = {'kernel_initializer' : init, 'kernel_constraint' : const}
 	
 	
 	def __init__(self,
@@ -72,8 +72,8 @@ class MyPGGAN(object):
 		
 		in_latent = Input(shape=[self.latent_size])
 		g = Dense(np.prod(self.img_shape[0][0:2] + (init_depth,)), 
-		kernel_initializer = MyPGGAN.init, 
-		kernel_constraint = MyPGGAN.const)(in_latent)
+		kernel_initializer = init, 
+		kernel_constraint = const)(in_latent)
 		g = Reshape(self.img_shape[0][0:2] + (init_depth,))(g)
 
 		return Model(inputs = in_latent, outputs = g, name = 'input_layers_' + str(step) + '_for_G')
@@ -88,10 +88,10 @@ class MyPGGAN(object):
 			inp = block_end
 			upsampling = UpSampling2D(scale)(block_end)
 			g = upsampling
-		g = Conv2D(depth, 4, padding='same',**MyPGGAN.kernel_cond)(g)
+		g = Conv2D(depth, 4, padding='same',**kernel_cond)(g)
 		g = PixelNormalization()(g)
 		g = LeakyReLU(0.2)(g)
-		g = Conv2D(depth, 3, padding='same', **MyPGGAN.kernel_cond)(g)
+		g = Conv2D(depth, 3, padding='same', **kernel_cond)(g)
 		g = PixelNormalization()(g)
 		g = LeakyReLU(0.2)(g)
 		
@@ -117,7 +117,7 @@ class MyPGGAN(object):
 	def mk_output_layers_for_G(self, step):
 		
 		inp = Input(shape=self.generators[step].output_shape[1:])
-		out = Conv2D(3,1,**MyPGGAN.kernel_cond)(inp)
+		out = Conv2D(3,1,**kernel_cond)(inp)
 		out = Activation('tanh')(out)
 		
 		return Model(inp, out, name='output_layers_' + str(step) + '_for_G')
@@ -128,9 +128,9 @@ class MyPGGAN(object):
 	def mk_input_layers_for_D(self,step):
 		
 		inp = Input(shape=self.img_shape[step])
-		d = Conv2D(init_depth, 1, **MyPGGAN.kernel_cond)(inp)
+		d = Conv2D(init_depth, 1, **kernel_cond)(inp)
 		if isinstance(self.discriminators[step], Model):
-			d = Conv2D(self.discriminators[step].input_shape[-1], 1, **MyPGGAN.kernel_cond)(inp)
+			d = Conv2D(self.discriminators[step].input_shape[-1], 1, **kernel_cond)(inp)
 		d = LeakyReLU(0.2)(d)
 		
 		return Model(inputs=inp, outputs=d, name='input_layers_' + str(step) + '_for_D')
@@ -144,9 +144,9 @@ class MyPGGAN(object):
 			inp = Input(shape=self.discriminators[step+1].output_shape[1:])
 			
 		d = inp
-		d = Conv2D(depth, (3,3), padding='same', **MyPGGAN.kernel_cond)(d)
+		d = Conv2D(depth, (3,3), padding='same', **kernel_cond)(d)
 		d = LeakyReLU(alpha=0.2)(d)
-		d = Conv2D(depth, (4,4), padding='same', **MyPGGAN.kernel_cond)(d)
+		d = Conv2D(depth, (4,4), padding='same', **kernel_cond)(d)
 		d = LeakyReLU(alpha=0.2)(d)
 		if step>0:
 			d = AveragePooling2D(scale)(d)
@@ -177,7 +177,7 @@ class MyPGGAN(object):
 		inp = Input(shape=self.discriminators[0].output_shape[1:])
 		d = MiniBatchStandardDeviation()(inp)
 		d = Flatten()(d)
-		d = Dense(1, **MyPGGAN.kernel_cond)(d)
+		d = Dense(1, **kernel_cond)(d)
 		d = Activation('linear')(d)
 
 		return Model(inputs = inp, outputs=d, name='output_layers_' + str(step) + '_for_D')
@@ -553,7 +553,7 @@ class MyPGGAN(object):
 if __name__=='__main__':
 
 	gan = MyPGGAN()
-	'''
+	
 	gan.initialize_DnG_chains()
 	gan.build_D(0)
 	gan.build_G(0)
@@ -562,12 +562,12 @@ if __name__=='__main__':
 	sample_img = gan.generate_samples(10)
 	sample_img = Image.fromarray(sample_img.astype('uint8'))
 	sample_img.show()
-	gan.save(False)
-	gan.train(0, 2, 16, 3,True)
+	#gan.save(False)
+	gan.train(0, 2, 16, 1,True)
 	sample_img = gan.generate_samples(10)
 	sample_img = Image.fromarray(sample_img.astype('uint8'))
 	sample_img.show()
-	gan.save(False)
+	#gan.save(False)
 	'''
 	gan.load(1, True)
 	gan.compile()
@@ -587,3 +587,4 @@ if __name__=='__main__':
 	sample_img = gan.generate_samples(10)
 	sample_img = Image.fromarray(sample_img.astype('uint8'))
 	sample_img.show()
+	'''

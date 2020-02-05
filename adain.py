@@ -24,10 +24,11 @@ class AdaIN(Layer):
         self.input_dim = input_dim
         self.units = units
         
-        self.w_gamma = self.add_weight(shape=(input_dim, units,), initializer=super.initializer,constraint=super.constraint,dtype='float', trainable=True,name='adain_w_gamma')
+        self.w_gamma = self.add_weight(shape=(input_dim, units,),initializer='ones', dtype='float', trainable=True,name='adain_w_gamma')
         self.b_gamma = self.add_weight(shape=(units,), initializer='zeros',dtype='float' ,trainable=True,name='adain_b_gamma')
-        self.w_beta = self.add_weight(shape=(input_dim, units,), initializer=super.initializer,constraint=super.constraint,dtype='float', trainable=True,name='adain_w_beta')
+        self.w_beta = self.add_weight(shape=(input_dim, units,),initializer='ones',dtype='float', trainable=True,name='adain_w_beta')
         self.b_beta = self.add_weight(shape=(units,), initializer='zeros', dtype='float', trainable=True,name='adain_b_beta')
+        self.style_index = 0
     
     
     def build(self, input_shape):
@@ -59,9 +60,8 @@ class AdaIN(Layer):
         mean = K.mean(inputs[0], reduction_axes, keepdims=True)
         stddev = K.std(inputs[0], reduction_axes, keepdims=True) + self.epsilon
         normed = (inputs[0] - mean)/stddev
-        
-        
-        return normed * gamma + beta
+        out = normed * gamma + beta
+        return K.reshape(out, K.shape(inputs[0]))
     
     def get_config(self):
         config = {
@@ -137,10 +137,10 @@ class SPADE(Layer):
         }
         base_config = super(SPADE, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
-    
+    '''
     def compute_output_shape(self, input_shape):
     
         return input_shape[0]
-        
+        '''
         
         

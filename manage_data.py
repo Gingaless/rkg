@@ -14,13 +14,13 @@ max_load_img = 512
 
 
 def _zip(src):
-
-    assert os.path.exists(src)
-    zipf = zipfile.ZipFile('{}.zip'.format(src),'w',zipfile.ZIP_DEFLATED)
-    for root, dirs, files in os.walk(src):
-        for filename in files:
-            zipf.write(os.path.join(root,filename))
-    zipf.close()
+	zipname = '{}.zip'.format(src)
+	assert os.path.exists(src)
+	zipf = zipfile.ZipFile(zipname,'w',zipfile.ZIP_DEFLATED)
+	for root, dirs, files in os.walk(src):
+		for filename in files:
+			zipf.write(os.path.join(root,filename))
+	zipf.close()
 
 def unzip(path):
 
@@ -30,7 +30,7 @@ def unzip(path):
     zipf.extractall()
 
 
-def load_image(path,size):
+def load_image(path,size, random_flip = False):
 
     assert os.path.exists(path)
 
@@ -41,7 +41,10 @@ def load_image(path,size):
     if num_files<=max_load_img:
         img_arr = np.zeros((num_files,) + tuple(size) + (3,), dtype='float')
         for i,f in enumerate(file_names):
-            img_arr[i,:,:,:] = Image.open(os.path.join(path,f))
+        	im =  Image.open(os.path.join(path,f))
+        	if random_flip and np.random.randint(2) < 1:
+        		im = im.transpose(Image.FLIP_LEFT_RIGHT)
+        	img_arr[i,:,:,:] = im
         yield img_arr
 
     else:
@@ -54,16 +57,19 @@ def load_image(path,size):
             num_f = len(fns)
             img_arr = np.zeros((num_f,) + tuple(size) + (3,), dtype='float')
             for i,f in enumerate(fns):
-                img_arr[i,:,:,:] = Image.open(os.path.join(path,f))
+                im =  Image.open(os.path.join(path,f))
+                if random_flip and np.random.randint(2) < 1:
+                	im = im.transpose(Image.FLIP_LEFT_RIGHT)
+                img_arr[i,:,:,:] = im
             yield img_arr
 
 
 
-def load_image_batch(path,size,batch_size):
+def load_image_batch(path,size,batch_size, random_flip=True):
     q=0
     r=0
     remainder_img = None
-    for img_arr in load_image(path,size):
+    for img_arr in load_image(path,size, random_flip):
         if r>0:
             img_arr = np.concatenate([remainder_img, img_arr], axis=0)
         num_img = len(img_arr)
@@ -118,6 +124,7 @@ if __name__=='__main__':
     batch_size = 15
     subpath = str(size[0]) + 'x' + str(size[1])
     fullpath = os.path.join(path, subpath)
+    unzip('kfcp256fp')
     for img_batch in load_image_batch(fullpath,size,batch_size):
         print(np.shape(img_batch))
         imgs = generate_sample_image(img_batch)

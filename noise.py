@@ -51,7 +51,7 @@ class ApplyNoise(Layer):
 			noise_generating_rule = partial(ngf, *noise_args, **noise_keywords)
 		self.noise_generating_rule = noise_generating_rule
 		self.channels = fils
-		self.fils = self.add_weight(shape=(1,fils),dtype='float32', initializer=super.initializer, constraint=super.constraint, trainable=True,name='noise_ratio_per_channel')
+		self.fils = self.add_weight(shape=(1,fils),initializer='ones', dtype='float32', trainable=True,name='noise_ratio_per_channel')
 		
 	def build(self, input_shape):
 		
@@ -78,11 +78,11 @@ class ApplyNoise(Layer):
 		noise = K.dot(noise, self.fils)
 		
 		out = inputs + noise
-		
 		return out
 		
 	
 	def compute_output_shape(self, input_shape):
+		
 		return input_shape
 	
 

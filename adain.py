@@ -3,7 +3,6 @@ from keras.models import Model
 from keras import backend as K
 from keras.backend import reshape
 import numpy as np
-from keras_layer_normalization import LayerNormalization
 from keras.layers import Reshape
 
 #Input b and g should be 1x1xC

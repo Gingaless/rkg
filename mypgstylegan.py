@@ -36,7 +36,7 @@ class PGStyleGAN(MyPGGAN):
 		self.style_dist = [0]*(self.style_mixing)
 		self.mixing_matrices = None
 		self.img_noise_generator = partial(img_noise_func, *img_noise_args, **img_noise_kwargs)
-		self.custom_layers = dict(list(self.custom_layers.items()) + list({'ApplyNoise' : ApplyNoise, 'AdanIN' : AdaIN, 'MixStyle' : MixStyle, 'LearnedConstTensor' : LearnedConstTensor, 'Normalize' : Normalize}.items()))
+		self.custom_layers = dict(list(self.custom_layers.items()) + list({'ApplyNoise' : ApplyNoise, 'AdaIN' : AdaIN, 'MixStyle' : MixStyle, 'LearnedConstTensor' : LearnedConstTensor, 'Normalize' : Normalize}.items()))
 		
 	
 	def mk_input_layers_for_G(self, step):

@@ -114,6 +114,8 @@ class PGStyleGAN(MyPGGAN):
 			G = self.generators[i]([G, styles[i]])
 
 		old_G = G
+		if self.generators[step]==None:
+			self.generators[step]=self.mk_G_block(step)
 		G = self.generators[step]([old_G, styles[step]])
 		if output_layers == None:
 			output_layers = self.mk_output_layers_for_G(step)

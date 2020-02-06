@@ -100,6 +100,26 @@ class PGStyleGAN(MyPGGAN):
 		G = input_layers
 		if G == None:
 			G = self.mk_input_layers_for_G(step)
+		elif len(G.output) < step+2:
+			n_sty_inp = 1 if step < self.start_to_mix_style else min(step+1, self.style_mixing+1)
+			lct_inp = Input([1])
+			lct = None
+			sty_inps = [Input([self.latent_size]) for _ in range(n_sty_inp)]
+			nors = [Normalize()(inp) for inp in sty_inps]
+			dens = []
+			d = nors
+			for layer in G.layers:
+				if isinstance(layer, Dense):
+					dens.append(layer)
+				if isinstance(layer, LearnedConstTensor):
+					lct = layer(lct_inp)
+			for i in range(n_sty_inp):
+				for j in range(self.n_layers_of_mn):
+					d[i] = dens[j](d[i])
+			sty_mix = [MixStyle(i, n_sty_inp, step+1)(d) for i in range(step+1)]
+			G = Model(inputs=[lct_inp] + sty_inps, outputs = [lct] + sty_mix,
+			name = 'input_layers_{}_for_G'.format(str(step)))
+					
 		inps = G.input
 		G = G(inps)
 		styles = G[1:]
@@ -126,6 +146,7 @@ class PGStyleGAN(MyPGGAN):
 
 		self.G = Model(inputs=inps, outputs=G)
 		
+		
 	def train_AM(self, batch_size):
 		
 		self.mixing_matrices = mk_random_mix_mat(len(self.G.input) - 1, len(self.mixing_matrices) )
@@ -141,6 +162,12 @@ class PGStyleGAN(MyPGGAN):
 	def random_input_vector_for_G(self, batch_size):
 		fake_x = np.ones([batch_size,1])
 		return [fake_x] + [self.noise_func(batch_size, self.latent_size) for _ in range(len(self.G.input)-1)]
+		
+	def generate_samples(self, num_samples):
+		
+		self.mixing_matrices = mk_random_mix_mat(len(self.G.input)-1, len(self.mixing_matrices))
+		switch_styles(self.G, self.mixing_matrices)
+		return super(PGStyleGAN, self).generate_samples(num_samples)
 
 
 
@@ -148,14 +175,12 @@ class PGStyleGAN(MyPGGAN):
 if __name__=='__main__':
 	
 	gan = PGStyleGAN(latent_size=512)
+	'''
 	gan.build_G(1)
-	gan.G.summary()
 	gan.initialize_D_chains()
 	gan.build_D(1)
-	gan.D.summary()
+	'''
+	gan.load(2,merge=True)
 	gan.compile()
-	gan.AM.summary()
-	gan.DM.summary()
-	print(gan.AM_optimizer)
-	print(gan.DM_optimizer)
-	gan.train(1,1,20,1,True)
+	gan.save(False)
+	#gan.train(1,1,20,1,True)

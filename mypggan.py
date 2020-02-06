@@ -323,12 +323,10 @@ class MyPGGAN(object):
 			input_layers_for_G = load_model(path_inG, self.custom_layers)
 		elif os.path.exists(path_inG2 + '.json'):
 			input_layers_for_G = load_model(path_inG2, self.custom_layers)
-			
 		if os.path.exists(path_outD + '.json'):
 			output_layers_for_D = load_model(path_outD, self.custom_layers)
 		elif os.path.exists(path_outD2 + '.json'):
 			output_layers_for_D = load_model(path_outD2, self.custom_layers)
-			
 		if os.path.exists(path_outG + '.json'):
 			output_layers_for_G = load_model(path_outG, self.custom_layers)
 

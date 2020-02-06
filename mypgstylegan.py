@@ -128,13 +128,13 @@ class PGStyleGAN(MyPGGAN):
 		
 		self.mixing_matrices = mk_random_mix_mat(len(self.G.input) - 1, len(self.mixing_matrices) )
 		switch_styles(self.G, self.mixing_matrices)
-		super(PGStyleGAN, self).train_AM(batch_size)
+		return super(PGStyleGAN, self).train_AM(batch_size)
 		
 	def train_DM(self, real_samples, batch_size):
 		
 		self.mixing_matrices = mk_random_mix_mat(len(self.G.input)-1, len(self.mixing_matrices))
 		switch_styles(self.G, self.mixing_matrices)
-		super(PGStyleGAN, self).train_DM(real_samples, batch_size)
+		return super(PGStyleGAN, self).train_DM(real_samples, batch_size)
 		
 	def random_input_vector_for_G(self, batch_size):
 		fake_x = np.ones([batch_size,1])
@@ -158,4 +158,4 @@ if __name__=='__main__':
 	print(gan.DM_optimizer)
 	print(gan.AM_loss)
 	print(gan.DM_loss)
-	gan.train(0,1,16,1,False)
+	gan.train(0,1,20,1,True)

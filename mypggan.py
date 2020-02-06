@@ -79,7 +79,7 @@ class MyPGGAN(object):
 		return Model(inputs = in_latent, outputs = g, name = 'input_layers_' + str(step) + '_for_G')
 		
 		
-	def mk_G_block(self, step, depth=200,scale=2):
+	def mk_G_block(self, step, depth=init_depth,scale=2):
 		
 		inp = Input(shape=self.img_shape[0][:2] + (init_depth,))
 		g = inp
@@ -136,7 +136,7 @@ class MyPGGAN(object):
 		return Model(inputs=inp, outputs=d, name='input_layers_' + str(step) + '_for_D')
 
 
-	def mk_D_block(self, step, depth=200, scale=2):
+	def mk_D_block(self, step, depth=init_depth, scale=2):
 		
 		inp = Input(shape=self.img_shape[step][:2] + (depth,))
 		

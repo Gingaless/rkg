@@ -42,7 +42,7 @@ class MixStyle(Layer):
 		
 		config = {
 		'step' : self.step,
-		'n_inp_w' : self.n_inp_w
+		'n_inp_w' : self.n_inp_w,
 		'n_g_block' : self.n_g_block
 		}
 		base_config = super(MixStyle, self).get_config()

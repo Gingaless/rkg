@@ -439,7 +439,6 @@ class MyPGGAN(object):
 		fake_y = self.fake_y_for_DM(batch_size)
 		DM_loss.append(self.DM.train_on_batch(real_samples, real_y))
 		DM_loss.append(self.DM.train_on_batch(fake, fake_y))
-		update_fadein(self.D)
 		return DM_loss
 
 	def train_AM(self, batch_size):
@@ -448,7 +447,6 @@ class MyPGGAN(object):
 		latent_vectors = self.random_input_vector_for_G(batch_size)
 		fake_y = self.y_for_GM(batch_size)
 		AM_loss += self.AM.train_on_batch(latent_vectors,fake_y)
-		update_fadein(self.G)
 		return AM_loss
 
 	def train_on_epoch(self, step, batch_size, print_term=0):
@@ -464,12 +462,14 @@ class MyPGGAN(object):
 		for real_samples in load_image_batch(path, self.img_shape[step][:2], batch_size):
 
 			DM_loss.append(self.train_DM(real_samples,batch_size))
-			AM_loss.append(self.train_AM(batch_size))
+			#AM_loss.append(self.train_AM(batch_size))
 			num_iter += 1
 			if num_iter % self.n_critic == 0 or num_iter >= iter_per_epoch:
 				AM_loss.append(self.train_AM(batch_size))
 				num_iter_am += 1
 				buf_iter_am += 1
+			update_fadein(self.D)
+			update_fadein(self.G)
 
 			if print_term>0:
 				if num_iter % print_term==0 and num_iter > 0:

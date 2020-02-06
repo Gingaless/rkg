@@ -23,7 +23,7 @@ class PGStyleGAN(MyPGGAN):
 	
 	def __init__(self, n_layers_of_mn=8, 
 	img_noise_func = K.random_normal, img_noise_args = [], img_noise_kwargs = {'mean' : 0, 'stddev' : 0.5}, 
-	style_mixing = (1,3), **kwargs):
+	style_mixing = (1,2), **kwargs):
 		
 		super(PGStyleGAN, self).__init__(**kwargs)
 		

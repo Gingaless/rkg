@@ -158,4 +158,4 @@ if __name__=='__main__':
 	print(gan.DM_optimizer)
 	print(gan.AM_loss)
 	print(gan.DM_loss)
-	gan.train(0,1,16,1)
+	gan.train(0,1,16,1,False)

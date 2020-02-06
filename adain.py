@@ -23,9 +23,9 @@ class AdaIN(Layer):
         self.input_dim = input_dim
         self.units = units
         
-        self.w_gamma = self.add_weight(shape=(input_dim, units,),initializer='ones', dtype='float', trainable=True,name='adain_w_gamma')
+        self.w_gamma = self.add_weight(shape=(input_dim, units,),initializer='he_normal', dtype='float', trainable=True,name='adain_w_gamma')
         self.b_gamma = self.add_weight(shape=(units,), initializer='zeros',dtype='float' ,trainable=True,name='adain_b_gamma')
-        self.w_beta = self.add_weight(shape=(input_dim, units,),initializer='ones',dtype='float', trainable=True,name='adain_w_beta')
+        self.w_beta = self.add_weight(shape=(input_dim, units,),initializer='he_normal',dtype='float', trainable=True,name='adain_w_beta')
         self.b_beta = self.add_weight(shape=(units,), initializer='zeros', dtype='float', trainable=True,name='adain_b_beta')
         self.style_index = 0
     

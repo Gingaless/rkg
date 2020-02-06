@@ -500,10 +500,15 @@ class MyPGGAN(object):
 		
 		if print_term < 1:
 			print_term = 1
-		
-		mean_loss = np.mean(loss[-print_term:], axis=0)
-		max_loss = np.max(loss[-print_term:], axis=0)
-		min_loss = np.min(loss[-print_term:], axis=0)
+			
+		if len(loss)>0:
+			mean_loss = np.mean(loss[-print_term:], axis=0)
+			max_loss = np.max(loss[-print_term:], axis=0)
+			min_loss = np.min(loss[-print_term:], axis=0)
+		else:
+			mean_loss = 0
+			max_loss = 0
+			min_loss = 0
 		
 		dict_summary = []
 		dict_summary.append(('mean', mean_loss))

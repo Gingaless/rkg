@@ -52,7 +52,7 @@ class MixStyle(Layer):
 				
 def mk_mix_mat(dist_list, n_inp_w):
 	
-	mix_mat = [np.zeros((len(dist_list),n_inp_w,1,1)) for _ in dist_list]
+	mix_mat = [np.zeros((n_inp_w,1,1)) for _ in dist_list]
 	for i in range(len(dist_list)):
 		mix_mat[i][dist_list[i],0,0] = 1.0
 	return mix_mat		

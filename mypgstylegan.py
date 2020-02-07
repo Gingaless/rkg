@@ -34,15 +34,20 @@ class PGStyleGAN(MyPGGAN):
 		self.style_mixing = style_mixing[0]
 		self.start_to_mix_style = style_mixing[1]
 		self.style_dist = [0]*(self.style_mixing)
-		self.mixing_matrices = None
+		self.mixing_matrices = []
 		self.img_noise_generator = partial(img_noise_func, *img_noise_args, **img_noise_kwargs)
 		self.custom_layers = dict(list(self.custom_layers.items()) + list({'ApplyNoise' : ApplyNoise, 'AdaIN' : AdaIN, 'MixStyle' : MixStyle, 'LearnedConstTensor' : LearnedConstTensor, 'Normalize' : Normalize}.items()))
+		
+		
+	def get_n_inp_sty(self, step):
+		
+		return 1 if step < self.start_to_mix_style else min(step+1, self.style_mixing+1)
 		
 	
 	def mk_input_layers_for_G(self, step):
 		
-		n_sty_inp = 1 if step < self.start_to_mix_style else min(step+1, self.style_mixing+1)
-		self.mixing_matrices = ini_mixing_matrix(n_sty_inp, step)
+		n_sty_inp = self.get_n_inp_sty(step)
+		self.mixing_matrices = ini_mixing_matrix(n_sty_inp, step+1)
 		mn_inps = [Input([self.latent_size]) for _ in range(n_sty_inp)]
 		lct_fake_inp = Input([1])
 		dens = [Dense(self.latent_size, **kernel_cond) for _ in range(self.n_layers_of_mn)]
@@ -95,14 +100,14 @@ class PGStyleGAN(MyPGGAN):
 					
 	def build_G(self, step, input_layers=None, output_layers=None, merged_old_output_layers=None):
 		
-		n_sty_inp = 1 if step < self.start_to_mix_style else min(step+1, self.style_mixing+1)
+		n_sty_inp = self.get_n_inp_sty(step)
 		self.mixing_matrices = ini_mixing_matrix(n_sty_inp, step+1)
 		G = input_layers
 		if G == None:
 			G = self.mk_input_layers_for_G(step)
 		elif len(G.output) < step+2:
 			print('rebuild input layers... from {} to {}.'.format(step-1,step))
-			n_sty_inp = 1 if step < self.start_to_mix_style else min(step+1, self.style_mixing+1)
+			n_sty_inp = self.get_n_inp_sty(step)
 			lct_inp = Input([1])
 			lct = None
 			sty_inps = [Input([self.latent_size]) for _ in range(n_sty_inp)]
@@ -160,7 +165,6 @@ class PGStyleGAN(MyPGGAN):
 		return super(PGStyleGAN, self).train_AM(batch_size)
 		
 	def train_DM(self, real_samples, batch_size):
-		
 		self.mix_reg()
 		return super(PGStyleGAN, self).train_DM(real_samples, batch_size)
 		
@@ -180,12 +184,12 @@ class PGStyleGAN(MyPGGAN):
 if __name__=='__main__':
 	
 	gan = PGStyleGAN(latent_size=512)
-	'''
-	gan.build_G(1)
+	
+	gan.build_G(0)
 	gan.initialize_D_chains()
-	gan.build_D(1)
-	'''
-	gan.load(2,merge=True)
+	gan.build_D(0)
+	
+	#gan.load(2,merge=True)
 	gan.compile()
-	gan.save(False)
-	#gan.train(1,1,20,1,True)
+	#gan.save(False)
+	gan.train(0,1,20,1,True)

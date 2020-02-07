@@ -101,6 +101,7 @@ class PGStyleGAN(MyPGGAN):
 		if G == None:
 			G = self.mk_input_layers_for_G(step)
 		elif len(G.output) < step+2:
+			print('rebuild input layers... from {} to {}.'.format(step-1,step))
 			n_sty_inp = 1 if step < self.start_to_mix_style else min(step+1, self.style_mixing+1)
 			lct_inp = Input([1])
 			lct = None
@@ -145,28 +146,32 @@ class PGStyleGAN(MyPGGAN):
 			G = self.mk_merge_layers_for_G(step, merged_old_output_layers)([old_G, G])
 
 		self.G = Model(inputs=inps, outputs=G)
+		self.mix_reg()
+	
+			
+	def mix_reg(self):
+		self.mixing_matrices = mk_random_mix_mat(len(self.G.input)-1, len(self.mixing_matrices))
+		switch_styles(self.G, self.mixing_matrices)
 		
 		
 	def train_AM(self, batch_size):
 		
-		self.mixing_matrices = mk_random_mix_mat(len(self.G.input) - 1, len(self.mixing_matrices) )
-		switch_styles(self.G, self.mixing_matrices)
+		self.mix_reg()
 		return super(PGStyleGAN, self).train_AM(batch_size)
 		
 	def train_DM(self, real_samples, batch_size):
 		
-		self.mixing_matrices = mk_random_mix_mat(len(self.G.input)-1, len(self.mixing_matrices))
-		switch_styles(self.G, self.mixing_matrices)
+		self.mix_reg()
 		return super(PGStyleGAN, self).train_DM(real_samples, batch_size)
 		
 	def random_input_vector_for_G(self, batch_size):
 		fake_x = np.ones([batch_size,1])
 		return [fake_x] + [self.noise_func(batch_size, self.latent_size) for _ in range(len(self.G.input)-1)]
-		
+
+				
 	def generate_samples(self, num_samples):
 		
-		self.mixing_matrices = mk_random_mix_mat(len(self.G.input)-1, len(self.mixing_matrices))
-		switch_styles(self.G, self.mixing_matrices)
+		self.mix_reg()
 		return super(PGStyleGAN, self).generate_samples(num_samples)
 
 

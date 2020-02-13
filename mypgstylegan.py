@@ -155,6 +155,7 @@ class PGStyleGAN(MyPGGAN):
 	
 			
 	def mix_reg(self):
+		print(self.mixing_matrices)
 		self.mixing_matrices = mk_random_mix_mat(len(self.G.input)-1, len(self.mixing_matrices))
 		switch_styles(self.G, self.mixing_matrices)
 		

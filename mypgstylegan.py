@@ -106,7 +106,9 @@ class PGStyleGAN(MyPGGAN):
 		if G == None:
 			G = self.mk_input_layers_for_G(step)
 		elif len(G.output) < step+2:
+			G.name = 'input_layers_{}_for_G'.format(step-1)
 			print('rebuild input layers... from {} to {}.'.format(step-1,step))
+			self.load_weights_by_name(G)
 			n_sty_inp = self.get_n_inp_sty(step)
 			lct_inp = Input([1])
 			lct = None
@@ -125,6 +127,7 @@ class PGStyleGAN(MyPGGAN):
 			sty_mix = [MixStyle(i, n_sty_inp, step+1)(d) for i in range(step+1)]
 			G = Model(inputs=[lct_inp] + sty_inps, outputs = [lct] + sty_mix,
 			name = 'input_layers_{}_for_G'.format(str(step)))
+					
 					
 		inps = G.input
 		G = G(inps)
@@ -184,13 +187,26 @@ class PGStyleGAN(MyPGGAN):
 
 if __name__=='__main__':
 	
-	gan = PGStyleGAN(latent_size=512)
+	from PIL import Image
 	
+	gan = PGStyleGAN(latent_size=512)
+	'''
 	gan.build_G(1)
 	gan.initialize_D_chains()
 	gan.build_D(1)
-	
-	#gan.load(2,merge=True)
+	'''
+	gan.load(2,merge=True)
 	gan.compile()
+	
+	im = gan.generate_samples(40).astype('uint8')
+	img = Image.fromarray(im)
+	img.save('sample1.jpg')
+	
 	#gan.save(False)
-	gan.train(1,1,20,1,True)
+	
+	gan.train(2,1,32,1,True)
+	
+	im = gan.generate_samples(100).astype('uint8')
+	im = Image.fromarray(im)
+	im.save('sample2.jpg')
+	gan.save(False)

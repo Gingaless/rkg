@@ -91,7 +91,7 @@ def denormalize(img_arr):
     return ((img_arr+1)*127.5).astype(np.uint)
 
 
-def generate_sample_image(img_arr, min_size=(128,128),cols=4):
+def generate_sample_image(img_arr, min_size=(64,64),cols=4):
 
     img_arr = denormalize(img_arr)
     img_shape = np.shape(img_arr)[1:]

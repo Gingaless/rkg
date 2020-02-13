@@ -155,7 +155,7 @@ class PGStyleGAN(MyPGGAN):
 	
 			
 	def mix_reg(self):
-		print(self.mixing_matrices)
+		
 		self.mixing_matrices = mk_random_mix_mat(len(self.G.input)-1, len(self.mixing_matrices))
 		switch_styles(self.G, self.mixing_matrices)
 		
@@ -186,11 +186,11 @@ if __name__=='__main__':
 	
 	gan = PGStyleGAN(latent_size=512)
 	
-	gan.build_G(0)
+	gan.build_G(1)
 	gan.initialize_D_chains()
-	gan.build_D(0)
+	gan.build_D(1)
 	
 	#gan.load(2,merge=True)
 	gan.compile()
 	#gan.save(False)
-	gan.train(0,1,20,1,True)
+	gan.train(1,1,20,1,True)

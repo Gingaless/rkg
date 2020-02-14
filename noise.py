@@ -43,7 +43,7 @@ class ApplyNoise(Layer):
 	'random_uniform' : K.random_uniform
 	}
 	
-	def __init__(self, noise_generating_rule, fils, noise_func=None, noise_args=None, noise_keywords=None, **kwargs):
+	def __init__(self, noise_generating_rule, fils, noise_func=None, noise_args=None, noise_keywords=None, initializer='he_normal', constraint=None, **kwargs):
 		
 		super(ApplyNoise, self).__init__(**kwargs)
 		if noise_generating_rule=='loaded_from_outer_model':
@@ -51,7 +51,7 @@ class ApplyNoise(Layer):
 			noise_generating_rule = partial(ngf, *noise_args, **noise_keywords)
 		self.noise_generating_rule = noise_generating_rule
 		self.channels = fils
-		self.fils = self.add_weight(shape=(1,fils),initializer='ones', dtype='float32', trainable=True,name='noise_ratio_per_channel')
+		self.fils = self.add_weight(shape=(1,fils),initializer=initializer, constraint=constraint, dtype='float32', trainable=True,name='noise_ratio_per_channel')
 		
 	def build(self, input_shape):
 		

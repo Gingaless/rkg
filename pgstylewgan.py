@@ -63,12 +63,11 @@ class PGStyleWGAN(PGStyleGAN):
 
 	def train_DM(self, real_samples, batch_size):
 		
-		DM_loss = []
 		latent = self.random_input_vector_for_G(batch_size)
 		real_y = self.real_y_for_DM(batch_size)
 		fake_y = self.fake_y_for_DM(batch_size)
 		dummy_y = self.dummy_y_for_DM(batch_size)
-		DM_loss.append(self.DM.train_on_batch([real_samples] + latent, [real_y, fake_y, dummy_y]))
+		DM_loss = (self.DM.train_on_batch([real_samples] + latent, [real_y, fake_y, dummy_y]))
 		return DM_loss
 		
 		

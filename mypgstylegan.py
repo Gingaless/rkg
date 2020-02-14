@@ -1,6 +1,6 @@
 
 from functools import partial
-from mypggan import MyPGGAN, kernel_cond
+from mypggan import MyPGGAN, kernel_cond, init, const
 import keras.backend as K
 from keras.layers import Input, Dense, Activation
 from keras.layers.convolutional import UpSampling2D, Convolution2D as Conv2D
@@ -73,11 +73,11 @@ class PGStyleGAN(MyPGGAN):
 			inps[0] = Input(self.generators[step-1].output_shape[1:])
 			out = UpSampling2D(scale)(inps[0])
 			out = Conv2D(depth, 3, padding='same', **kernel_cond)(out)
-		out = ApplyNoise(self.img_noise_generator, K.int_shape(out)[-1])(out)
-		out = AdaIN(self.latent_size, K.int_shape(out)[-1])([out, sty])
+		out = ApplyNoise(self.img_noise_generator, K.int_shape(out)[-1], initializer=init, constraint=const)(out)
+		out = AdaIN(self.latent_size, K.int_shape(out)[-1], initializer=init, constraint=const)([out, sty])
 		out = Conv2D(K.int_shape(out)[-1], 3, padding='same', **kernel_cond)(out)
-		out = ApplyNoise(self.img_noise_generator, K.int_shape(out)[-1])(out)
-		out = AdaIN(self.latent_size, K.int_shape(out)[-1])([out, sty])
+		out = ApplyNoise(self.img_noise_generator, K.int_shape(out)[-1], initializer=init, constraint=const)(out)
+		out = AdaIN(self.latent_size, K.int_shape(out)[-1], initializer=init, constraint=const)([out, sty])
 		return Model(inputs=inps, outputs=out, name='G_chain_' + str(step))
 		
 		

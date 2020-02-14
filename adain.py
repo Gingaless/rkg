@@ -13,6 +13,8 @@ class AdaIN(Layer):
              epsilon=1e-7,
              center=True,
              scale=True,
+             initializer = 'ones',
+             constraint = None,
              **kwargs):
         super(AdaIN, self).__init__(**kwargs)
         self.axis = axis
@@ -23,9 +25,9 @@ class AdaIN(Layer):
         self.input_dim = input_dim
         self.units = units
         
-        self.w_gamma = self.add_weight(shape=(input_dim, units,),initializer='he_normal', dtype='float', trainable=True,name='adain_w_gamma')
+        self.w_gamma = self.add_weight(shape=(input_dim, units,),initializer=initializer, constraint = constraint,  dtype='float', trainable=True,name='adain_w_gamma')
         self.b_gamma = self.add_weight(shape=(units,), initializer='zeros',dtype='float' ,trainable=True,name='adain_b_gamma')
-        self.w_beta = self.add_weight(shape=(input_dim, units,),initializer='he_normal',dtype='float', trainable=True,name='adain_w_beta')
+        self.w_beta = self.add_weight(shape=(input_dim, units,),initializer=initializer,constraint=constraint, dtype='float', trainable=True,name='adain_w_beta')
         self.b_beta = self.add_weight(shape=(units,), initializer='zeros', dtype='float', trainable=True,name='adain_b_beta')
         self.style_index = 0
     

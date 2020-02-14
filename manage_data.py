@@ -2,12 +2,7 @@
 import numpy as np
 import os
 from PIL import Image
-from keras.models import model_from_json
-from keras.utils import CustomObjectScope
-from keras.layers import deserialize as layer_from_config, serialize
 import zipfile
-from copy import deepcopy
-import json
 
 
 max_load_img = 512
@@ -28,6 +23,8 @@ def unzip(path):
     assert os.path.exists(zipname)
     zipf = zipfile.ZipFile(zipname, 'r')
     zipf.extractall()
+    
+  
 
 
 def load_image(path,size, random_flip = False):
@@ -118,7 +115,8 @@ def generate_sample_image(img_arr, min_size=(64,64),cols=4):
 
 
 if __name__=='__main__':
-    
+	
+	'''
     path = 'kfcp256fp'
     size = (16,16)
     batch_size = 15
@@ -131,4 +129,4 @@ if __name__=='__main__':
         print(imgs.shape)
         img = Image.fromarray(imgs.astype('uint8'))
         img.show()
-        break
+        break'''

@@ -159,7 +159,7 @@ class PGStyleGAN(MyPGGAN):
 			
 	def mix_reg(self):
 		
-		self.mixing_matrices = mk_random_mix_mat(len(self.G.input)-1, len(self.mixing_matrices))
+		self.mixing_matrices = mk_random_mix_mat(len(self.G.inputs)-1, len(self.mixing_matrices))
 		switch_styles(self.G, self.mixing_matrices)
 		
 		
@@ -174,7 +174,7 @@ class PGStyleGAN(MyPGGAN):
 		
 	def random_input_vector_for_G(self, batch_size):
 		fake_x = np.ones([batch_size,1])
-		return [fake_x] + [self.noise_func(batch_size, self.latent_size) for _ in range(len(self.G.input)-1)]
+		return [fake_x] + [self.noise_func(batch_size, self.latent_size) for _ in range(len(self.G.inputs)-1)]
 
 				
 	def generate_samples(self, num_samples):
@@ -190,21 +190,23 @@ if __name__=='__main__':
 	from PIL import Image
 	
 	gan = PGStyleGAN(latent_size=512)
-	'''
+	
 	gan.build_G(1)
 	gan.initialize_D_chains()
 	gan.build_D(1)
-	'''
-	gan.load(2,merge=True)
-	gan.compile()
 	
+	#gan.load(2,merge=True)
+	gan.compile()
+	print(gan.D.layers[0].input_shape)
+	'''
 	im = gan.generate_samples(40).astype('uint8')
 	img = Image.fromarray(im)
 	img.save('sample1.jpg')
+	'''
 	
 	#gan.save(False)
 	
-	gan.train(2,1,32,1,True)
+	gan.train(1,1,32,1,True)
 	
 	im = gan.generate_samples(100).astype('uint8')
 	im = Image.fromarray(im)

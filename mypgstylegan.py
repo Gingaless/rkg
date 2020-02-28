@@ -95,7 +95,7 @@ class PGStyleGAN(MyPGGAN):
 
 		for i in range(self.num_steps):
 			
-			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,int(init_depth/2),scale)	
+			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,default_depth_G,scale)	
 			
 					
 	def build_G(self, step, input_layers=None, output_layers=None, merged_old_output_layers=None):
@@ -191,12 +191,14 @@ if __name__=='__main__':
 	
 	gan = PGStyleGAN(latent_size=512)
 	
-	gan.build_G(1)
+	gan.build_G(4)
 	gan.initialize_D_chains()
-	gan.build_D(1)
+	gan.build_D(4)
 	
 	#gan.load(2,merge=True)
 	gan.compile()
+	gan.G.summary()
+	gan.D.summary()
 	print(gan.D.layers[0].input_shape)
 	'''
 	im = gan.generate_samples(40).astype('uint8')
@@ -206,7 +208,7 @@ if __name__=='__main__':
 	
 	#gan.save(False)
 	
-	gan.train(1,1,32,1,True)
+	gan.train(4,1,32,1,True)
 	
 	im = gan.generate_samples(100).astype('uint8')
 	im = Image.fromarray(im)

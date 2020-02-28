@@ -138,6 +138,8 @@ class MyPGGAN(object):
 
 	def mk_D_block(self, step, depth=init_depth, scale=2):
 		
+		if hasattr(depth, '__len__'):
+			depth = depth[step]
 		inp = Input(shape=self.img_shape[step][:2] + (depth,))
 		
 		if step+1 < self.num_steps and self.discriminators[step+1] != None:
@@ -183,11 +185,13 @@ class MyPGGAN(object):
 		return Model(inputs = inp, outputs=d, name='output_layers_' + str(step) + '_for_D')
 
 
-	def initialize_DnG_chains(self,scale=2):
-
+	def initialize_DnG_chains(self,scale=2, depth = init_depth):
+		
+		if not hasattr(depth, '__len__'):
+			depth = [depth]*self.num_steps
 		for i in range(self.num_steps):
-			self.generators[i] = self.mk_G_block(i,init_depth,scale)
-			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,init_depth,scale)
+			self.generators[i] = self.mk_G_block(i,depth[i],scale)
+			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,depth[self.num_steps - 1 - i],scale)
 
 
 

@@ -64,7 +64,9 @@ class PGStyleGAN(MyPGGAN):
 	
 			
 	def mk_G_block(self, step, depth=init_depth, scale=2):
-	
+		
+		if hasattr(depth, '__len__'):
+			depth = depth[step]
 		inps = [Input(self.img_shape[0][:2] + (self.latent_size,)),
 		Input([self.latent_size])]
 		out = inps[0]

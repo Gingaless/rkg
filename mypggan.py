@@ -194,11 +194,11 @@ class MyPGGAN(object):
 		
 		if not hasattr(depth, '__len__'):
 			depth = [depth]*self.num_steps
-		if not hasattr(depth, '__len__'):
+		if not hasattr(self_attn, '__len__'):
 			self_attn = [self_attn]*self.num_steps
 		for i in range(self.num_steps):
-			self.generators[i] = self.mk_G_block(i,depth[i],scale, self_attn)
-			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,depth[self.num_steps - 1 - i],scale, self_attn)
+			self.generators[i] = self.mk_G_block(i,depth[i],scale, self_attn[i])
+			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,depth[self.num_steps - 1 - i],scale, self_attn[i])
 
 
 

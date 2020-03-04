@@ -68,7 +68,7 @@ class SelfAttention(Layer):
 		
 		config = {'filters' : self.filters, 'channels' : self.channels, 'n' : self.n}
 		base_config = super(SelfAttention, self).get_config()
-		return dict(config.items() + base_config.items())
+		return dict(list(config.items()) + list(base_config.items()))
 
 		
 						

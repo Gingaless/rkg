@@ -32,6 +32,8 @@ class MyPGGAN(object):
 	latent_size = 1024,
 	heights = [4,8,16,32,64,128,256],
 	widths = [4,8,16,32,64,128,256],
+	depths = init_depth,
+	self_attns = 0, 
 	AM_loss = 'mse', DM_loss = 'mse',
 	AM_optimizer = Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
 	DM_optimizer = Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
@@ -39,7 +41,8 @@ class MyPGGAN(object):
 	custom_layers = 
 	{'PixelNormalization' : PixelNormalization,
 	'MiniBatchStandardDeviation' : MiniBatchStandardDeviation,
-	'WeightedSum' : WeightedSum},
+	'WeightedSum' : WeightedSum, 
+	'SelfAttention': SelfAttention},
 	model_info_dir = 'mypggan1',
 	img_src = 'kfcp256fp',
 	noise_func = lambda num, size : np.clip(np.random.normal(0.0,1.0,(num,size)),-2.0,2.0)):
@@ -67,6 +70,13 @@ class MyPGGAN(object):
 		self.custom_layers = custom_layers
 		self.noise_func = noise_func
 		self.n_critic = n_critic
+		if not hasattr(depths, '__len__'):
+			depths = [depths]*self.num_steps
+		if not hasattr(self_attns, '__len__'):
+			self_attns = [self_attns]*self.num_steps
+		self.depths = depths
+		self.self_attns = self_attns
+		
 		
 		
 	def mk_input_layers_for_G(self, step):
@@ -190,15 +200,11 @@ class MyPGGAN(object):
 		return Model(inputs = inp, outputs=d, name='output_layers_' + str(step) + '_for_D')
 
 
-	def initialize_DnG_chains(self,scale=2, depth = init_depth, self_attn = 0):
+	def initialize_DnG_chains(self,scale=2):
 		
-		if not hasattr(depth, '__len__'):
-			depth = [depth]*self.num_steps
-		if not hasattr(self_attn, '__len__'):
-			self_attn = [self_attn]*self.num_steps
 		for i in range(self.num_steps):
-			self.generators[i] = self.mk_G_block(i,depth[i],scale, self_attn[i])
-			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,depth[self.num_steps - 1 - i],scale, self_attn[i])
+			self.generators[i] = self.mk_G_block(i,self.depths[i],scale, self.self_attns[i])
+			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,self.depths[self.num_steps - 1 - i],scale, self.self_attns[i])
 
 
 
@@ -410,7 +416,7 @@ class MyPGGAN(object):
 			self.load_weights_by_name(merged_old_output_layers_for_G)
 
 		if self.discriminators[step]==None:
-			self.discriminators[step] = self.mk_D_block(step)
+			self.discriminators[step] = self.mk_D_block(step, depth=self.depths[step], self_attn=self.self_attns[step])
 		if self.generators[step]==None:
 			self.generators[step] = self.mk_G_block(step)
 
@@ -566,9 +572,9 @@ class MyPGGAN(object):
 
 if __name__=='__main__':
 
-	gan = MyPGGAN()
+	gan = MyPGGAN(self_attns=1)
 	
-	gan.initialize_DnG_chains(self_attn = 64)
+	gan.initialize_DnG_chains()
 	gan.build_D(0)
 	gan.build_G(0)
 	gan.compile()
@@ -576,13 +582,12 @@ if __name__=='__main__':
 	sample_img = gan.generate_samples(10)
 	sample_img = Image.fromarray(sample_img.astype('uint8'))
 	sample_img.show()
-	#gan.save(False)
-	gan.train(0, 2, 16, 1,True)
+	gan.save(False)
+	#gan.train(0, 2, 16, 1,True)
 	sample_img = gan.generate_samples(10)
 	sample_img = Image.fromarray(sample_img.astype('uint8'))
 	sample_img.show()
-	#gan.save(False)
-	'''
+	gan.save(False)
 	gan.load(1, True)
 	gan.compile()
 	gan.G.summary()
@@ -601,4 +606,4 @@ if __name__=='__main__':
 	sample_img = gan.generate_samples(10)
 	sample_img = Image.fromarray(sample_img.astype('uint8'))
 	sample_img.show()
-	'''
+	

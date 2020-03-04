@@ -15,6 +15,7 @@ from minibatchstdev import MiniBatchStandardDeviation
 from weightedsum import WeightedSum, update_fadein, set_fadein
 from manage_data import  _zip, unzip, load_image_batch, generate_sample_image
 from manage_model import set_model_trainable, save_model, load_model, save_layer, load_layer
+from self_attention import SelfAttention
 
 
 init_depth = 256
@@ -79,7 +80,7 @@ class MyPGGAN(object):
 		return Model(inputs = in_latent, outputs = g, name = 'input_layers_' + str(step) + '_for_G')
 		
 		
-	def mk_G_block(self, step, depth=init_depth,scale=2):
+	def mk_G_block(self, step, depth=init_depth,scale=2, self_attn = 0):
 		
 		inp = Input(shape=self.img_shape[0][:2] + (init_depth,))
 		g = inp
@@ -94,6 +95,8 @@ class MyPGGAN(object):
 		g = Conv2D(depth, 3, padding='same', **kernel_cond)(g)
 		g = PixelNormalization()(g)
 		g = LeakyReLU(0.2)(g)
+		if self_attn > 0:
+			g = SelfAttention(self_attn)(g)
 		
 		return Model(inp, g, name='G_chain_' + str(step))
 
@@ -136,7 +139,7 @@ class MyPGGAN(object):
 		return Model(inputs=inp, outputs=d, name='input_layers_' + str(step) + '_for_D')
 
 
-	def mk_D_block(self, step, depth=init_depth, scale=2):
+	def mk_D_block(self, step, depth=init_depth, scale=2, self_attn = 0):
 		
 		if hasattr(depth, '__len__'):
 			depth = depth[step]
@@ -152,6 +155,8 @@ class MyPGGAN(object):
 		d = LeakyReLU(alpha=0.2)(d)
 		if step>0:
 			d = AveragePooling2D(scale)(d)
+		if self_attn > 0:
+			d = SelfAttention(self_attn)(d)
 		return Model(inputs=inp, outputs=d, name='D_chain_' + str(step))
 
 
@@ -185,13 +190,15 @@ class MyPGGAN(object):
 		return Model(inputs = inp, outputs=d, name='output_layers_' + str(step) + '_for_D')
 
 
-	def initialize_DnG_chains(self,scale=2, depth = init_depth):
+	def initialize_DnG_chains(self,scale=2, depth = init_depth, self_attn = 0):
 		
 		if not hasattr(depth, '__len__'):
 			depth = [depth]*self.num_steps
+		if not hasattr(depth, '__len__'):
+			self_attn = [self_attn]*self.num_steps
 		for i in range(self.num_steps):
-			self.generators[i] = self.mk_G_block(i,depth[i],scale)
-			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,depth[self.num_steps - 1 - i],scale)
+			self.generators[i] = self.mk_G_block(i,depth[i],scale, self_attn)
+			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,depth[self.num_steps - 1 - i],scale, self_attn)
 
 
 
@@ -561,7 +568,7 @@ if __name__=='__main__':
 
 	gan = MyPGGAN()
 	
-	gan.initialize_DnG_chains()
+	gan.initialize_DnG_chains(self_attn = 64)
 	gan.build_D(0)
 	gan.build_G(0)
 	gan.compile()

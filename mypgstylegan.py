@@ -11,6 +11,7 @@ from adain import AdaIN
 from noise import ApplyNoise
 from mixstyle import MixStyle, ini_mixing_matrix, mk_random_mix_mat, switch_styles
 import numpy as np
+from self_attention import SelfAttention
 
 
 K.set_image_data_format('channels_last')
@@ -63,7 +64,7 @@ class PGStyleGAN(MyPGGAN):
 		return Model(inputs = [lct_fake_inp] + mn_inps, outputs = [lct] + sty_out, name = 'input_layers_{}_for_G'.format(str(step)))
 	
 			
-	def mk_G_block(self, step, depth=init_depth, scale=2):
+	def mk_G_block(self, step, depth=init_depth, scale=2, self_attn = 0):
 		
 		if hasattr(depth, '__len__'):
 			depth = depth[step]
@@ -80,6 +81,8 @@ class PGStyleGAN(MyPGGAN):
 		out = Conv2D(K.int_shape(out)[-1], 3, padding='same', **kernel_cond)(out)
 		out = ApplyNoise(self.img_noise_generator, K.int_shape(out)[-1], initializer=init, constraint=const)(out)
 		out = AdaIN(self.latent_size, K.int_shape(out)[-1], initializer=init, constraint=const)([out, sty])
+		if self_attn > 0:
+			out = SelfAttention(self_attn)(out)
 		return Model(inputs=inps, outputs=out, name='G_chain_' + str(step))
 		
 		
@@ -194,7 +197,7 @@ if __name__=='__main__':
 	gan = PGStyleGAN(latent_size=512)
 	
 	gan.build_G(4)
-	gan.initialize_D_chains()
+	gan.initialize_DnG_chains(self_attn = 64)
 	gan.build_D(4)
 	
 	#gan.load(2,merge=True)

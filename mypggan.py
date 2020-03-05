@@ -418,7 +418,7 @@ class MyPGGAN(object):
 		if self.discriminators[step]==None:
 			self.discriminators[step] = self.mk_D_block(step, depth=self.depths[step], self_attn=self.self_attns[step])
 		if self.generators[step]==None:
-			self.generators[step] = self.mk_G_block(step)
+			self.generators[step] = self.mk_G_block(step, depth=self.depths[step], self_attn=self.self_attns[step])
 
 		self.load_weights(input_layers_for_D, input_layers_for_G, output_layers_for_D, output_layers_for_G)
 

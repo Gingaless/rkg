@@ -119,15 +119,14 @@ class GoogleAttention(Layer):
 
 		bs = K.shape(inputs)[0:1]
 		hw = K.shape(inputs)[1:3]
-		#c1 = K.shape(inputs)[-1:] // self.scale_channels[0]
 		c2 =  K.shape(inputs)[-1:] // self.scale_channels[1]
 		shape1 = K.variable(np.array([self.n1, self.channels // self.scale_channels[0]]), dtype='int32')
 		shape2 = K.variable(np.array([self.n2, self.channels // self.scale_channels[0]]), dtype='int32')
 		shape3 = K.variable(np.array([self.n1, self.channels // self.scale_channels[1]]), dtype='int32')
 		shape1 = K.concatenate([bs, shape1])
 		shape2 = K.concatenate([bs, shape2])
-		#shape3 = K.concatenate([bs, shape3])
-		shape3 = K.concatenate([bs, hw, c2])
+		shape2 = K.concatenate([bs, shape3])
+		shape4 = K.concatenate([bs, hw, c2])
 		f = K.conv2d(inputs, kernel = self.Wf, data_format = data_format)
 		f = K.pool2d(f, pool_size = (ggl_scale_hw, ggl_scale_hw), 
 		strides = (ggl_scale_hw, ggl_scale_hw), padding='same', pool_mode = 'max') # h/2 , w/2 , c1
@@ -145,7 +144,7 @@ class GoogleAttention(Layer):
 		s = K.batch_dot(ff, gf, axes=(2,2)) # bs, n1, n2
 		beta = K.softmax(s) #bs, n1, n2
 		o = K.batch_dot(beta, hf, axes=(1,1)) #bs, n2, c2
-		o = K.reshape(o, shape3) #bs, h, w, c2
+		o = K.reshape(o, shape4) #bs, h, w, c2
 		o = K.conv2d(o, kernel = self.Wv, data_format = data_format) #bs, h, w, C
 		return self.gamma*o + inputs
 

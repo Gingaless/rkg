@@ -126,8 +126,8 @@ class GoogleAttention(Layer):
 		shape3 = K.variable(np.array([self.n1, self.channels // self.scale_channels[1]]), dtype='int32')
 		shape1 = K.concatenate([bs, shape1])
 		shape2 = K.concatenate([bs, shape2])
-		#shape3 = K.concatenate([bs, shape3])
-		shape3 = K.concatenate([bs, hw, c2])
+		shape3 = K.concatenate([bs, shape3])
+		shape4 = K.concatenate([bs, hw, c2])
 		f = K.conv2d(inputs, kernel = self.Wf, data_format = data_format)
 		f = K.pool2d(f, pool_size = (ggl_scale_hw, ggl_scale_hw), 
 		strides = (ggl_scale_hw, ggl_scale_hw), padding='same', pool_mode = 'max') # h/2 , w/2 , c1
@@ -141,11 +141,11 @@ class GoogleAttention(Layer):
 		ff = K.reshape(f, shape1) # bs, n1, c1
 		gf = K.reshape(g, shape2) # bs, n2, c1
 		hf = K.reshape(h, shape3) # bs, n1, c2
-
+		
 		s = K.batch_dot(ff, gf, axes=(2,2)) # bs, n1, n2
 		beta = K.softmax(s) #bs, n1, n2
 		o = K.batch_dot(beta, hf, axes=(1,1)) #bs, n2, c2
-		o = K.reshape(o, shape3) #bs, h, w, c2
+		o = K.reshape(o, shape4) #bs, h, w, c2
 		o = K.conv2d(o, kernel = self.Wv, data_format = data_format) #bs, h, w, C
 		return self.gamma*o + inputs
 

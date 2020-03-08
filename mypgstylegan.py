@@ -71,6 +71,9 @@ class PGStyleGAN(MyPGGAN):
 		inps = [Input(self.img_shape[0][:2] + (self.latent_size,)),
 		Input([self.latent_size])]
 		out = inps[0]
+		attn_layer = self.get_attn_layer(self_attn)
+		if attn_layer != None:
+			out = attn_layer(out)
 		sty = inps[1]
 		if step>0:
 			inps[0] = Input(self.generators[step-1].output_shape[1:])

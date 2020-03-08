@@ -82,6 +82,20 @@ class MyPGGAN(object):
 		else:
 			self.self_attns = self_attns['arg']
 		self.depths = depths
+
+
+
+	def get_attn_layer(self, self_attn):
+
+		attn_layer = None
+		if self.attns_mode == SelfAttention:
+			if self_attn > 0:
+				attn_layer = SelfAttention(self_attn)
+		if self.attns_mode == GoogleAttention:
+			if self_attn != None:
+				attn_layer = GoogleAttention(self_attn)
+
+		return attn_layer
 		
 		
 		
@@ -100,6 +114,9 @@ class MyPGGAN(object):
 		
 		inp = Input(shape=self.img_shape[0][:2] + (init_depth,))
 		g = inp
+		attn_layer = self.get_attn_layer(self_attn)
+		if attn_layer != None:
+			g = attn_layer(g)
 		if step>0:
 			block_end = Input(shape=self.generators[step-1].output_shape[1:])
 			inp = block_end
@@ -169,18 +186,15 @@ class MyPGGAN(object):
 			inp = Input(shape=self.discriminators[step+1].output_shape[1:])
 			
 		d = inp
+		attn_layer = self.get_attn_layer(self_attn)
+		if attn_layer != None:
+			d = attn_layer(d)
 		d = Conv2D(depth, (3,3), padding='same', **kernel_cond)(d)
 		d = LeakyReLU(alpha=0.2)(d)
 		d = Conv2D(depth, (4,4), padding='same', **kernel_cond)(d)
 		d = LeakyReLU(alpha=0.2)(d)
 		if step>0:
 			d = AveragePooling2D(scale)(d)
-		if self.attns_mode == SelfAttention:
-			if self_attn > 0:
-				d = SelfAttention(self_attn)(d)
-		if self.attns_mode == GoogleAttention:
-			if self_attn != None:
-				d = GoogleAttention(self_attn)(d)
 		
 		return Model(inputs=inp, outputs=d, name='D_chain_' + str(step))
 

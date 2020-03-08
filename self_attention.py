@@ -97,7 +97,7 @@ class GoogleAttention(Layer):
 		
 		self.channels= input_shape[-1]
 		shape1 = [1,1] + [input_shape[-1], self.channels // self.scale_channels[0]]
-		shape2 = [1,1] + [input_shape[-1], self.channels // self.scale_channels[0]]
+		shape2 = [1,1] + [input_shape[-1], self.channels // self.scale_channels[1]]
 		shape3 = [1,1] + [self.channels // self.scale_channels[1], self.channels]
 		self.Wf = self.add_weight(name='Wf', shape=shape1,
 		initializer=initializer, constraint=constraint, dtype = 'float32')
@@ -124,6 +124,7 @@ class GoogleAttention(Layer):
 		shape1 = K.variable(np.array([self.n1, self.channels // self.scale_channels[0]]), dtype='int32')
 		shape2 = K.variable(np.array([self.n2, self.channels // self.scale_channels[0]]), dtype='int32')
 		shape3 = K.variable(np.array([self.n1, self.channels // self.scale_channels[1]]), dtype='int32')
+		
 		shape1 = K.concatenate([bs, shape1])
 		shape2 = K.concatenate([bs, shape2])
 		shape3 = K.concatenate([bs, shape3])
@@ -138,10 +139,11 @@ class GoogleAttention(Layer):
 		h = K.pool2d(h, pool_size = (ggl_scale_hw, ggl_scale_hw), 
 		strides = (ggl_scale_hw, ggl_scale_hw), padding='same', pool_mode = 'max') # h/2, w/2, c2
 
+
 		ff = K.reshape(f, shape1) # bs, n1, c1
 		gf = K.reshape(g, shape2) # bs, n2, c1
 		hf = K.reshape(h, shape3) # bs, n1, c2
-		
+
 		s = K.batch_dot(ff, gf, axes=(2,2)) # bs, n1, n2
 		beta = K.softmax(s) #bs, n1, n2
 		o = K.batch_dot(beta, hf, axes=(1,1)) #bs, n2, c2
@@ -166,7 +168,7 @@ if __name__ == '__main__':
 	from keras.models import Model
 	from keras.optimizers import Adam
 	
-	
+	'''
 	inp = Input([4,4,3])
 	img = np.random.normal(0.0,1.0, (2,4,4,3))
 	obj = np.random.normal(0.0, 1.0, (2,4,4,3))
@@ -183,11 +185,11 @@ if __name__ == '__main__':
 	m.train_on_batch(img, obj)
 	print('----')
 	print(m.predict(img))
-	
 	'''
-	inp = Input([4,4,3])
-	img = np.random.normal(0.0,1.0, (2,4,4,3))
-	obj = np.random.normal(0.0, 1.0, (2,4,4,3))
+	
+	inp = Input([4,4,16])
+	img = np.random.normal(0.0,1.0, (2,4,4,16))
+	obj = np.random.normal(0.0, 1.0, (2,4,4,16))
 	out = GoogleAttention()(inp)
 	m = Model(inp, out)
 	m.compile(optimizer=Adam(0.01), loss = 'mse')
@@ -201,4 +203,4 @@ if __name__ == '__main__':
 	m.train_on_batch(img, obj)
 	print('----')
 	print(m.predict(img))
-	'''
+	

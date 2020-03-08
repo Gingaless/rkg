@@ -11,7 +11,7 @@ from adain import AdaIN
 from noise import ApplyNoise
 from mixstyle import MixStyle, ini_mixing_matrix, mk_random_mix_mat, switch_styles
 import numpy as np
-from self_attention import SelfAttention
+from self_attention import SelfAttention, GoogleAttention
 
 
 K.set_image_data_format('channels_last')
@@ -81,8 +81,12 @@ class PGStyleGAN(MyPGGAN):
 		out = Conv2D(K.int_shape(out)[-1], 3, padding='same', **kernel_cond)(out)
 		out = ApplyNoise(self.img_noise_generator, K.int_shape(out)[-1], initializer=init, constraint=const)(out)
 		out = AdaIN(self.latent_size, K.int_shape(out)[-1], initializer=init, constraint=const)([out, sty])
-		if self_attn > 0:
-			out = SelfAttention(self_attn)(out)
+		if self.attns_mode == SelfAttention:
+			if self_attn > 0:
+				out = SelfAttention(self_attn)(out)
+		if self.attns_mode == GoogleAttention:
+			if self_attn != None:
+				out = GoogleAttention(self_attn)(out)
 		return Model(inputs=inps, outputs=out, name='G_chain_' + str(step))
 		
 		
@@ -144,12 +148,12 @@ class PGStyleGAN(MyPGGAN):
 
 		for i in range(step):
 			if self.generators[i]==None:
-				self.generators[i] = self.mk_G_block(i, default_depth_G[i])
+				self.generators[i] = self.mk_G_block(i, default_depth_G[i], self.self_attns[i])
 			G = self.generators[i]([G, styles[i]])
 
 		old_G = G
 		if self.generators[step]==None:
-			self.generators[step]=self.mk_G_block(step, default_depth_G[step])
+			self.generators[step]=self.mk_G_block(step, default_depth_G[step], self.self_attns[step])
 		G = self.generators[step]([old_G, styles[step]])
 		if output_layers == None:
 			output_layers = self.mk_output_layers_for_G(step)
@@ -194,17 +198,23 @@ if __name__=='__main__':
 	
 	from PIL import Image
 	
-	gan = PGStyleGAN(latent_size=512)
-	
-	gan.build_G(4)
-	gan.initialize_DnG_chains(self_attn = 64)
+	self_attn = [None, None, (8,2), None, None, (8,2), None]
+	gan = PGStyleGAN(latent_size=512, self_attns={'mode' : GoogleAttention, 'arg' : self_attn}, depths=default_depth_G)
+
+	gan.initialize_DnG_chains()
 	gan.build_D(4)
+	gan.build_G(4)
 	
 	#gan.load(2,merge=True)
 	gan.compile()
 	gan.G.summary()
 	gan.D.summary()
-	print(gan.D.layers[0].input_shape)
+	for layer in gan.G.layers:
+		if isinstance(layer, Model):
+			layer.summary()
+	for layer in gan.D.layers:
+		if isinstance(layer, Model):
+			layer.summary()
 	'''
 	im = gan.generate_samples(40).astype('uint8')
 	img = Image.fromarray(im)

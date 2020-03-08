@@ -15,7 +15,7 @@ from minibatchstdev import MiniBatchStandardDeviation
 from weightedsum import WeightedSum, update_fadein, set_fadein
 from manage_data import  _zip, unzip, load_image_batch, generate_sample_image
 from manage_model import set_model_trainable, save_model, load_model, save_layer, load_layer
-from self_attention import SelfAttention
+from self_attention import SelfAttention, GoogleAttention
 
 
 init_depth = 256
@@ -33,7 +33,8 @@ class MyPGGAN(object):
 	heights = [4,8,16,32,64,128,256],
 	widths = [4,8,16,32,64,128,256],
 	depths = init_depth,
-	self_attns = 0, 
+	self_attns = 
+	{'mode' : SelfAttention, 'arg' : 0}, 
 	AM_loss = 'mse', DM_loss = 'mse',
 	AM_optimizer = Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
 	DM_optimizer = Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
@@ -42,7 +43,8 @@ class MyPGGAN(object):
 	{'PixelNormalization' : PixelNormalization,
 	'MiniBatchStandardDeviation' : MiniBatchStandardDeviation,
 	'WeightedSum' : WeightedSum, 
-	'SelfAttention': SelfAttention},
+	'SelfAttention': SelfAttention, 
+	'GoogleAttention' : GoogleAttention},
 	model_info_dir = 'mypggan1',
 	img_src = 'kfcp256fp',
 	noise_func = lambda num, size : np.clip(np.random.normal(0.0,1.0,(num,size)),-2.0,2.0)):
@@ -70,12 +72,16 @@ class MyPGGAN(object):
 		self.custom_layers = custom_layers
 		self.noise_func = noise_func
 		self.n_critic = n_critic
+		self.attns_mode = self_attns['mode']
+		self.self_attns = []
 		if not hasattr(depths, '__len__'):
 			depths = [depths]*self.num_steps
-		if not hasattr(self_attns, '__len__'):
-			self_attns = [self_attns]*self.num_steps
+		if self.attns_mode == SelfAttention:
+			if not hasattr(self_attns['arg'], '__len__'):
+				self.self_attns = [self_attns['arg']]*self.num_steps
+		else:
+			self.self_attns = self_attns['arg']
 		self.depths = depths
-		self.self_attns = self_attns
 		
 		
 		
@@ -105,8 +111,12 @@ class MyPGGAN(object):
 		g = Conv2D(depth, 3, padding='same', **kernel_cond)(g)
 		g = PixelNormalization()(g)
 		g = LeakyReLU(0.2)(g)
-		if self_attn > 0:
-			g = SelfAttention(self_attn)(g)
+		if self.attns_mode == SelfAttention:
+			if self_attn > 0:
+				g = SelfAttention(self_attn)(g)
+		if self.attns_mode == GoogleAttention:
+			if self_attn != None:
+				g = GoogleAttention(self_attn)(g)
 		
 		return Model(inp, g, name='G_chain_' + str(step))
 
@@ -165,8 +175,13 @@ class MyPGGAN(object):
 		d = LeakyReLU(alpha=0.2)(d)
 		if step>0:
 			d = AveragePooling2D(scale)(d)
-		if self_attn > 0:
-			d = SelfAttention(self_attn)(d)
+		if self.attns_mode == SelfAttention:
+			if self_attn > 0:
+				d = SelfAttention(self_attn)(d)
+		if self.attns_mode == GoogleAttention:
+			if self_attn != None:
+				d = GoogleAttention(self_attn)(d)
+		
 		return Model(inputs=inp, outputs=d, name='D_chain_' + str(step))
 
 

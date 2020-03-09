@@ -19,7 +19,7 @@ from self_attention import SelfAttention, GoogleAttention
 
 
 init_depth = 256
-init = RandomNormal(stddev=0.02)
+init = RandomNormal(stddev=0.04)
 const = max_norm(1.0)
 kernel_cond = {'kernel_initializer' : init, 'kernel_constraint' : const}
 
@@ -35,6 +35,7 @@ class MyPGGAN(object):
 	depths = init_depth,
 	self_attns = 
 	{'mode' : SelfAttention, 'arg' : 0}, 
+	normalizations = {'mode' : PixelNormalization, 'args' : []}, 
 	AM_loss = 'mse', DM_loss = 'mse',
 	AM_optimizer = Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
 	DM_optimizer = Adam(lr=0.001, beta_1=0, beta_2=0.99, epsilon=10e-8),
@@ -74,6 +75,7 @@ class MyPGGAN(object):
 		self.n_critic = n_critic
 		self.attns_mode = self_attns['mode']
 		self.self_attns = []
+		self.normalizations = normalizations
 		if not hasattr(depths, '__len__'):
 			depths = [depths]*self.num_steps
 		if self.attns_mode == SelfAttention:
@@ -97,6 +99,14 @@ class MyPGGAN(object):
 
 		return attn_layer
 		
+	def get_norm_layer(self):
+		
+		if self.normalizations['mode'] == None:
+			return None
+		else:
+			return self.normalizations['mode'](*self.normalizations['args'])
+			
+		
 		
 		
 	def mk_input_layers_for_G(self, step):
@@ -115,6 +125,7 @@ class MyPGGAN(object):
 		inp = Input(shape=self.img_shape[0][:2] + (init_depth,))
 		g = inp
 		attn_layer = self.get_attn_layer(self_attn)
+		norm_layer = self.get_norm_layer()
 		if attn_layer != None:
 			g = attn_layer(g)
 		if step>0:
@@ -122,11 +133,14 @@ class MyPGGAN(object):
 			inp = block_end
 			upsampling = UpSampling2D(scale)(block_end)
 			g = upsampling
-		g = Conv2D(depth, 4, padding='same',**kernel_cond)(g)
-		g = PixelNormalization()(g)
+		g = Conv2D(depth, 3, padding='same',**kernel_cond)(g)
+		norm_layer = self.get_norm_layer()
+		if norm_layer != None:
+			g = norm_layer(g)
 		g = LeakyReLU(0.2)(g)
 		g = Conv2D(depth, 3, padding='same', **kernel_cond)(g)
-		g = PixelNormalization()(g)
+		if norm_layer != None:
+			g = norm_layer(g)
 		g = LeakyReLU(0.2)(g)
 		
 		return Model(inp, g, name='G_chain_' + str(step))
@@ -181,11 +195,17 @@ class MyPGGAN(object):
 			
 		d = inp
 		attn_layer = self.get_attn_layer(self_attn)
+		norm_layer = self.get_norm_layer()
 		if attn_layer != None:
 			d = attn_layer(d)
 		d = Conv2D(depth, (3,3), padding='same', **kernel_cond)(d)
+		if norm_layer != None:
+			d = norm_layer(d)
 		d = LeakyReLU(alpha=0.2)(d)
-		d = Conv2D(depth, (4,4), padding='same', **kernel_cond)(d)
+		d = Conv2D(depth, (3,3), padding='same', **kernel_cond)(d)
+		norm_layer = self.get_norm_layer()
+		if norm_layer != None:
+			d = norm_layer(d)
 		d = LeakyReLU(alpha=0.2)(d)
 		if step>0:
 			d = AveragePooling2D(scale)(d)
@@ -227,7 +247,7 @@ class MyPGGAN(object):
 		
 		for i in range(self.num_steps):
 			self.generators[i] = self.mk_G_block(i,self.depths[i],scale, self.self_attns[i])
-			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,self.depths[self.num_steps - 1 - i],scale, self.self_attns[i])
+			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,self.depths[self.num_steps - 1 - i],scale, self.self_attns[self.num_steps -1 -i])
 
 
 

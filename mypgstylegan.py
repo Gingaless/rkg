@@ -70,26 +70,22 @@ class PGStyleGAN(MyPGGAN):
 			depth = depth[step]
 		inps = [Input(self.img_shape[0][:2] + (self.latent_size,)),
 		Input([self.latent_size])]
-		out = inps[0]
 		attn_layer = self.get_attn_layer(self_attn)
-		if attn_layer != None:
-			out = attn_layer(out)
+		out = inps[0]
 		sty = inps[1]
 		if step>0:
 			inps[0] = Input(self.generators[step-1].output_shape[1:])
-			out = UpSampling2D(scale)(inps[0])
+			out = inps[0]
+			if attn_layer != None:
+				out = attn_layer(out)
+			out = UpSampling2D(scale)(out)
 			out = Conv2D(depth, 3, padding='same', **kernel_cond)(out)
 		out = ApplyNoise(self.img_noise_generator, K.int_shape(out)[-1], initializer=init, constraint=const)(out)
 		out = AdaIN(self.latent_size, K.int_shape(out)[-1], initializer=init, constraint=const)([out, sty])
 		out = Conv2D(K.int_shape(out)[-1], 3, padding='same', **kernel_cond)(out)
 		out = ApplyNoise(self.img_noise_generator, K.int_shape(out)[-1], initializer=init, constraint=const)(out)
 		out = AdaIN(self.latent_size, K.int_shape(out)[-1], initializer=init, constraint=const)([out, sty])
-		if self.attns_mode == SelfAttention:
-			if self_attn > 0:
-				out = SelfAttention(self_attn)(out)
-		if self.attns_mode == GoogleAttention:
-			if self_attn != None:
-				out = GoogleAttention(self_attn)(out)
+		
 		return Model(inputs=inps, outputs=out, name='G_chain_' + str(step))
 		
 		
@@ -226,9 +222,10 @@ if __name__=='__main__':
 	
 	#gan.save(False)
 	
-	gan.train(4,1,32,1,True)
+	gan.train(4,1,32,0,True)
 	
 	im = gan.generate_samples(100).astype('uint8')
 	im = Image.fromarray(im)
 	im.save('sample2.jpg')
 	gan.save(False)
+	

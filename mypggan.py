@@ -128,12 +128,6 @@ class MyPGGAN(object):
 		g = Conv2D(depth, 3, padding='same', **kernel_cond)(g)
 		g = PixelNormalization()(g)
 		g = LeakyReLU(0.2)(g)
-		if self.attns_mode == SelfAttention:
-			if self_attn > 0:
-				g = SelfAttention(self_attn)(g)
-		if self.attns_mode == GoogleAttention:
-			if self_attn != None:
-				g = GoogleAttention(self_attn)(g)
 		
 		return Model(inp, g, name='G_chain_' + str(step))
 

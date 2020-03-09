@@ -81,8 +81,8 @@ class MyPGGAN(object):
 		if self.attns_mode == SelfAttention:
 			if not hasattr(self_attns['arg'], '__len__'):
 				self.self_attns = [self_attns['arg']]*self.num_steps
-		else:
-			self.self_attns = self_attns['arg']
+			else:
+				self.self_attns = self_attns['arg']
 		self.depths = depths
 
 

@@ -12,6 +12,8 @@ This layer requires noise generating function with 1 argument to initialize.
 The inputs for call function are the shapes of noises.
 '''
 
+
+
 class Noise(Layer):
 	
 	

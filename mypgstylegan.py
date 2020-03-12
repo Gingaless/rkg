@@ -76,12 +76,12 @@ class PGStyleGAN(MyPGGAN):
 		if step>0:
 			inps[0] = Input(self.generators[step-1].output_shape[1:])
 			out = inps[0]
-			if attn_layer != None:
-				out = attn_layer(out)
 			out = UpSampling2D(scale)(out)
 			out = Conv2D(depth, 3, padding='same', **kernel_cond)(out)
 		out = ApplyNoise(self.img_noise_generator, K.int_shape(out)[-1], initializer=init, constraint=const)(out)
 		out = AdaIN(self.latent_size, K.int_shape(out)[-1], initializer=init, constraint=const)([out, sty])
+		if attn_layer != None:
+			out = attn_layer(out)
 		out = Conv2D(K.int_shape(out)[-1], 3, padding='same', **kernel_cond)(out)
 		out = ApplyNoise(self.img_noise_generator, K.int_shape(out)[-1], initializer=init, constraint=const)(out)
 		out = AdaIN(self.latent_size, K.int_shape(out)[-1], initializer=init, constraint=const)([out, sty])

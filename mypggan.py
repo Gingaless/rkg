@@ -198,12 +198,12 @@ class MyPGGAN(object):
 		d = inp
 		attn_layer = self.get_attn_layer(self_attn)
 		norm_layer = self.get_norm_layer()
-		if attn_layer != None:
-			d = attn_layer(d)
 		d = Conv2D(depth, (3,3), padding='same', **kernel_cond)(d)
 		if norm_layer != None:
 			d = norm_layer(d)
 		d = LeakyReLU(alpha=0.2)(d)
+		if attn_layer != None:
+			d = attn_layer(d)
 		d = Conv2D(depth, (3,3), padding='same', **kernel_cond)(d)
 		norm_layer = self.get_norm_layer()
 		if norm_layer != None:

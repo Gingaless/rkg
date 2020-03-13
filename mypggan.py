@@ -114,22 +114,20 @@ class MyPGGAN(object):
 	def mk_input_layers_for_G(self, step):
 		
 		in_latent = Input(shape=[self.latent_size])
-		g = Dense(np.prod(self.img_shape[0][0:2] + (init_depth,)), 
+		g = Dense(np.prod(self.img_shape[0][0:2] + (self.depths[0],)), 
 		kernel_initializer = init, 
 		kernel_constraint = const)(in_latent)
-		g = Reshape(self.img_shape[0][0:2] + (init_depth,))(g)
+		g = Reshape(self.img_shape[0][0:2] + (self.depths[0],))(g)
 
 		return Model(inputs = in_latent, outputs = g, name = 'input_layers_' + str(step) + '_for_G')
 		
 		
 	def mk_G_block(self, step, depth=init_depth,scale=2, self_attn = 0):
 		
-		inp = Input(shape=self.img_shape[0][:2] + (init_depth,))
-		g = inp
+		inp = Input(shape=self.img_shape[0][:2] + (depth,))
 		attn_layer = self.get_attn_layer(self_attn)
 		norm_layer = self.get_norm_layer()
-		if attn_layer != None:
-			g = attn_layer(g)
+		
 		if step>0:
 			block_end = Input(shape=self.generators[step-1].output_shape[1:])
 			inp = block_end
@@ -140,6 +138,10 @@ class MyPGGAN(object):
 		if norm_layer != None:
 			g = norm_layer(g)
 		g = LeakyReLU(0.2)(g)
+		
+		if attn_layer != None:
+			g = attn_layer(g)
+			
 		g = Conv2D(depth, 3, padding='same', **kernel_cond)(g)
 		if norm_layer != None:
 			g = norm_layer(g)
@@ -178,7 +180,7 @@ class MyPGGAN(object):
 	def mk_input_layers_for_D(self,step):
 		
 		inp = Input(shape=self.img_shape[step])
-		d = Conv2D(init_depth, 1, **kernel_cond)(inp)
+		d = Conv2D(self.depths[step], 1, **kernel_cond)(inp)
 		if isinstance(self.discriminators[step], Model):
 			d = Conv2D(self.discriminators[step].input_shape[-1], 1, **kernel_cond)(inp)
 		d = LeakyReLU(0.2)(d)

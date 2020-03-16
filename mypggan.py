@@ -188,11 +188,11 @@ class MyPGGAN(object):
 		return Model(inputs=inp, outputs=d, name='input_layers_' + str(step) + '_for_D')
 
 
-	def mk_D_block(self, step, depth=init_depth, scale=2, self_attn = 0):
+	def mk_D_block(self, step, scale=2):
 		
-		if hasattr(depth, '__len__'):
-			depth = depth[step]
+		depth = self.depths[step]
 		inp = Input(shape=self.img_shape[step][:2] + (depth,))
+		self_attn = self.self_attns[step]
 		
 		if step+1 < self.num_steps and self.discriminators[step+1] != None:
 			inp = Input(shape=self.discriminators[step+1].output_shape[1:])
@@ -206,6 +206,7 @@ class MyPGGAN(object):
 		d = LeakyReLU(alpha=0.2)(d)
 		if attn_layer != None:
 			d = attn_layer(d)
+			
 		d = Conv2D(depth, (3,3), padding='same', **kernel_cond)(d)
 		norm_layer = self.get_norm_layer()
 		if norm_layer != None:
@@ -251,7 +252,7 @@ class MyPGGAN(object):
 		
 		for i in range(self.num_steps):
 			self.generators[i] = self.mk_G_block(i,self.depths[i],scale, self.self_attns[i])
-			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,self.depths[self.num_steps - 1 - i],scale, self.self_attns[self.num_steps -1 -i])
+			self.discriminators[self.num_steps - 1 - i] = self.mk_D_block(self.num_steps - 1 - i,scale)
 
 
 
@@ -463,7 +464,7 @@ class MyPGGAN(object):
 			self.load_weights_by_name(merged_old_output_layers_for_G)
 
 		if self.discriminators[step]==None:
-			self.discriminators[step] = self.mk_D_block(step, depth=self.depths[step], self_attn=self.self_attns[step])
+			self.discriminators[step] = self.mk_D_block(step)
 		if self.generators[step]==None:
 			self.generators[step] = self.mk_G_block(step, depth=self.depths[step], self_attn=self.self_attns[step])
 
